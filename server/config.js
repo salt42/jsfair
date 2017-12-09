@@ -4,13 +4,14 @@
 "use strict";
 
 var fs = require("fs");
-var prettyJSON = require('prettyjson');
+var beautify = require('js-beautify').js_beautify;
 var confPath = "";
 var conf = {};
 var defaults = {
-    httpPort: 666,
     http: {
-        staticDirectories: ["../client"],
+        port: 666,
+        staticDirs: ["../client"],
+        viewsDir: "../views",
     },
     dbFile: "../db/data.db"
 };
@@ -35,7 +36,11 @@ function load(path) {
 }
 function save() {
     checkConfFile();
-    fs.writeFileSync(confPath, prettyJSON.render(JSON.stringify(conf), { noColor: true }) );
+    fs.writeFileSync(confPath,
+        beautify(JSON.stringify(conf), {
+            indent_size: 4
+        })
+    );
 }
 
 function exitHandler(options, err) {

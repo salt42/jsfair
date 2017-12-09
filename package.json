@@ -1,0 +1,26 @@
+{
+  "name": "jsfair",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server/main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "bin": {
+    "jsfair": "bin/jsfair.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/salt42/jsfair.git"
+  },
+  "author": "",
+  "dependencies": {
+    "better-sqlite3": "^4.0.3",
+    "colors": "^1.1.2",
+    "cookie-parser": "^1.4.3",
+    "express": "^4.16.2",
+    "hbs": "^4.0.1",
+    "js-beautify": "^1.7.5",
+    "serve-favicon": "^2.4.5"
+  }
+}

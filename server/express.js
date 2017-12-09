@@ -12,9 +12,11 @@ var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 
 var app = express();
+var PORT = parseInt(config.http.port);
+
 
 // view engine setup
-app.set('views', path.join(jsfairPath, '../views'));
+app.set('views', path.join(jsfairPath, config["http"]["viewsDir"]));
 app.set('view engine', 'hbs');
 
 // uncomment after placing your favicon in /public
@@ -23,9 +25,9 @@ app.set('view engine', 'hbs');
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
-//@todo get path from config
-for (let i = 0; i < config["http"]["staticDirectories"].length; i++) {
-    app.use(express.static(path.join(jsfairPath, config["http"]["staticDirectories"][i])));
+
+for (let i = 0; i < config["http"]["staticDirs"].length; i++) {
+    app.use(express.static(path.join(jsfairPath, config["http"]["staticDirs"][i])));
 }
 app.use("/jsfair", express.static(path.join(jsfairPath, 'client')));
 
@@ -80,16 +82,16 @@ let isPortTaken = function(port, fn) {
         })
         .listen(port)
 };
-isPortTaken(config.httpPort, function(err, taken) {
+isPortTaken(PORT, function(err, taken) {
     if (err) {
         log(err);
         return;
     }
     if (taken) {
-        log("port '" + config.httpPort + "' is not free");
+        log("port '" + PORT + "' is not free");
         return;
     }
-    app.listen(config.httpPort, function () {
-        log('HTTP'.magenta + ' listening on port ' + config.httpPort.toString().magenta);
+    app.listen(PORT, function () {
+        log('HTTP'.magenta + ' listening on port ' + PORT.toString().magenta);
     });
 });
