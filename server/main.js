@@ -3,12 +3,13 @@
  */
 "use strict";
 
-
+var fs = require("fs");
 var colors = require('colors');
+global.jsfairPath = fs.realpathSync(__dirname + "/../");
 var log = require('./log')('main');
 log("Start Helping Hands Server");
 try {
-    require('./config')(__dirname + "/../conf.json");
+    require('./config')(jsfairPath + "/conf.json");
     require('./express.js');
 } catch(e) {
     log(e.message.red);

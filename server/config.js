@@ -9,6 +9,9 @@ var confPath = "";
 var conf = {};
 var defaults = {
     httpPort: 666,
+    http: {
+        staticDirectories: ["../client"],
+    },
     dbFile: "../db/data.db"
 };
 

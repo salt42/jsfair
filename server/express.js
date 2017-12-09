@@ -14,7 +14,7 @@ var bodyParser = require('body-parser');
 var app = express();
 
 // view engine setup
-app.set('views', path.join(__dirname, '../views'));
+app.set('views', path.join(jsfairPath, '../views'));
 app.set('view engine', 'hbs');
 
 // uncomment after placing your favicon in /public
@@ -24,8 +24,10 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
 //@todo get path from config
-app.use(express.static(path.join(__dirname, '../../client')));
-app.use("/jsfair", express.static(path.join(__dirname, '../client')));
+for (let i = 0; i < config["http"]["staticDirectories"].length; i++) {
+    app.use(express.static(path.join(jsfairPath, config["http"]["staticDirectories"][i])));
+}
+app.use("/jsfair", express.static(path.join(jsfairPath, 'client')));
 
 
 // ****************** routes *************************
