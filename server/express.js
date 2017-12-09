@@ -23,12 +23,13 @@ app.set('view engine', 'hbs');
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
-app.use(express.static(path.join(__dirname, '../public')));
+//@todo get path from config
+app.use(express.static(path.join(__dirname, '../../client')));
 app.use("/jsfair", express.static(path.join(__dirname, '../client')));
 
 
 // ****************** routes *************************
-
+//@todo read all routes from path
 var indexRoutes = require('./routes/index');
 // var usersRoute = require('./routes/users');
 // var dataRoute = require('./routes/data');
