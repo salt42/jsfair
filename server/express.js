@@ -17,7 +17,7 @@ var PORT = parseInt(config.http.port);
 
 
 // view engine setup
-app.set('views', path.join(jsfairPath, config["http"]["viewsDir"]));
+app.set('views', path.join(rootPath, config["http"]["viewsDir"]));
 app.set('view engine', 'hbs');
 
 // uncomment after placing your favicon in /public
@@ -28,7 +28,7 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
 
 for (let i = 0; i < config["http"]["staticDirs"].length; i++) {
-    app.use(express.static(path.join(jsfairPath, config["http"]["staticDirs"][i])));
+    app.use(express.static(path.join(rootPath, config["http"]["staticDirs"][i])));
 }
 app.use("/jsfair", express.static(path.join(jsfairPath, 'client')));
 

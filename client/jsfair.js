@@ -144,6 +144,7 @@
 
 
     function loadComponent(componentName, sectionName, args, fn) {
+        console.log("load: " + componentName);
         if (!Components.hasOwnProperty(componentName)) {
             throw Error("component with name '"+ componentName +"' not found");
         }
@@ -196,7 +197,7 @@
             }
             //check if section name is already taken
             if (sections.indexOf(sectionName) > -1) {
-                console.error("there are duplicate sections with name ");
+                console.error("there are duplicate sections with name '" + sectionName + "'", sections);
                 return;
             }
             sections.push(sectionName);
