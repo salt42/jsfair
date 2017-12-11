@@ -4,6 +4,7 @@
 "use strict";
 var config = require('./config');
 var log = require('./log')("express");
+var hook    = require('./hook');
 var express = require('express');
 var path = require('path');
 var favicon = require('serve-favicon');
@@ -32,13 +33,23 @@ for (let i = 0; i < config["http"]["staticDirs"].length; i++) {
 app.use("/jsfair", express.static(path.join(jsfairPath, 'client')));
 
 
+hook.trigger("express/beforRoutes", app);
 // ****************** routes *************************
-//@todo read all routes from path
-var indexRoutes = require('./routes/index');
+hook.getTrigger("createRoute", function(trigger, args) {
+    if (!args || !args[0]) {
+        log("ERROR: No url defined");
+        return;
+    }
+    let route = express.Router();
+    trigger(route);
+    app.use(args[0], route);
+});
+// //@todo read all routes from path
+// var indexRoutes = require('./routes/index');
 // var usersRoute = require('./routes/users');
 // var dataRoute = require('./routes/data');
 
-app.use('/', indexRoutes);
+// app.use('/', indexRoutes);
 app.use(function(req, res, next) {
     //@todo check if user is logged in
     next();

@@ -21,6 +21,7 @@
     "express": "^4.16.2",
     "hbs": "^4.0.1",
     "js-beautify": "^1.7.5",
+    "node-gyp": "^3.6.2",
     "serve-favicon": "^2.4.5"
   }
 }

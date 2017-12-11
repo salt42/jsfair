@@ -8,10 +8,12 @@ var beautify = require('js-beautify').js_beautify;
 var confPath = "";
 var conf = {};
 var defaults = {
+    appName: "jsFair",
+    modulePaths: ["../src/server/routes"],
     http: {
         port: 666,
-        staticDirs: ["../client"],
-        viewsDir: "../views",
+        staticDirs: ["../client", "../assets"],
+        viewsDir: "../src/views",
     },
     dbFile: "../db/data.db"
 };
