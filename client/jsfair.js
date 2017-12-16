@@ -56,7 +56,6 @@
         UIModules[uiName] = initMethod;
     };
 
-
     function getTemplate(templatePath, fn) {
         if (TemplateCache.has(templatePath)) {
             fn(TemplateCache.get(templatePath));
@@ -83,6 +82,9 @@
         UIModules[moduleName].call(ctx, global, $ele);
     }
 
+    /* GLOBAL */
+    global.onComponentLoaded = new Rx.Subject();
+
     global.getActiveComponent = function(sectionName) {
         let $section = $('section[name="'+ sectionName +'"]');
         if ($section.length < 0) {
@@ -90,9 +92,6 @@
         }
         return $section.data("context");
     };
-
-
-
     global.initUI = function($element) {
         let moduleName = $element.prop("tagName").toLowerCase();
         if (!UIModules.hasOwnProperty(moduleName)) {
@@ -103,6 +102,8 @@
                     initUIModule(moduleName, $(ele));
                 });
             }
+            // //@todo upgradeAllRegistered is a workaround
+            // componentHandler.upgradeAllRegistered();
             return;
         }
         initUIModule(moduleName, $element);
@@ -124,12 +125,10 @@
     };
 
     let loadingCompsCtx = [];
-
     global.loadComponent = function(componentName, sectionName, args) {
         loadingCompsCtx = [];
         loadComponent(componentName, sectionName, args, function() {
             initLoadedComps();
-
         });
     };
     function initLoadedComps() {
@@ -141,10 +140,7 @@
         }
         loadingCompsCtx = [];
     }
-
-
     function loadComponent(componentName, sectionName, args, fn) {
-        console.log("load: " + componentName);
         if (!Components.hasOwnProperty(componentName)) {
             throw Error("component with name '"+ componentName +"' not found");
         }
@@ -175,11 +171,13 @@
                         fn();
                     });
                     Components[componentName].init.call(ctx, global, $($section[0]), args);
+                    global.onComponentLoaded.next(componentName);
                 });
             });
         } else{
             Components[componentName].init.call(ctx, global, $($section[0]), args);
             fn();
+            global.onComponentLoaded.next(componentName);
         }
     }
     function loadComponents($container, fn) {
@@ -220,6 +218,62 @@
             fn();
         }
     }
+
+    /**
+     * Created by https://github.com/StephanHoyer/smoke-signal
+     */
+    function observer(options) {
+        var listeners = [];
+        var api = {
+            push: function (listener) {
+                if (listeners.indexOf(listener) < 0) {
+                    listeners.push(listener)
+                }
+                return {
+                    pause: function () {
+                        api.pull(listener)
+                    },
+                    resume: function () {
+                        api.push(listener)
+                    }
+                }
+            },
+            pull: function (listener) {
+                var index = listeners.indexOf(listener);
+                if (index > -1) {
+                    listeners.splice(index, 1)
+                }
+                return api
+            },
+            once: function (listener) {
+                var handler = api.push(function () {
+                    listener.apply(null, arguments);
+                    handler.pause()
+                });
+                return handler
+            },
+            trigger: function () {
+                var args = arguments;
+                [].concat(listeners).map(function (listener) {
+                    try {
+                        listener.apply(null, args)
+                    } catch (e) {
+                        if (options && options.onError) {
+                            options.onError(e)
+                        } else if (options && options.logExceptions) {
+                            console.error(e)
+                        }
+                    }
+                });
+                return api
+            },
+            clear: function () {
+                listeners = []
+            }
+        };
+        return api
+    }
+
 
     window.onload = function() {
         //init modules
