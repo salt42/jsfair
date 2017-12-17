@@ -6,16 +6,21 @@
 let log         = require('./log')("Database");
 let hook        = require('./hook');
 let fs          = require('fs');
+let path        = require('path');
 let Database    = require('better-sqlite3');
 let config      = require('./config');
 
-let DB                  = new Database(rootPath + config.dbFile, {});
+let dbFilePath          = path.join(rootPath, config.dbFile);
+if (!fs.existsSync(dbFilePath)) {
+    throw new Error("no database file: " + dbFilePath);
+}
+let DB                  = new Database(dbFilePath, {});
 let sqlQueryRegistry    = new Map();
 let dbMethods           = {};
 
 
 function init() {
-    log("Init")
+    log("Init");
     hook.trigger("db_prepare", DB);
     hook.getTrigger("db_addMethod", function(trigger, args) {
         if (!args || !args[0]) {
