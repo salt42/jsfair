@@ -9,9 +9,9 @@ let hook = {
             func = args;
             args = [];
         }
-        let list;
-        if (!hookListener.has(type)) {
-            list = [];
+        let list = [];
+        if (hookListener.has(type)) {
+            list = hookListener.get(type);
         }
         list.push({
             trigger: func,
@@ -31,7 +31,7 @@ let hook = {
         if (hookListener.has(type)) {
             let hooks = hookListener.get(type);
             for(let i = 0; i < hooks.length; i++) {
-                fn(hooks[0].trigger, hooks[0].args);
+                fn(hooks[i].trigger, hooks[i].args);
             }
         }
     }

@@ -9,16 +9,17 @@ var confPath = "";
 var conf = {};
 var defaults = {
     appName: "jsFair",
-    modulePaths: ["/src/server/routes"],
+    modulePaths: ["/test/routes"],
     http: {
         port: 666,
-        staticDirs: ["/src/client", "/assets"],
-        viewsDir: "/src/views",
+        staticDirs: ["/client"],
+        viewsDir: "/test/views",
     },
-    dbFile: "../db/data.db"
+    dbFile: "/test/data.db"
 };
 
 module.exports = function(path) {
+    console.log(path);
     load(path);
     module.exports = conf;
     return conf;
