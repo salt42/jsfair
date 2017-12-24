@@ -2,12 +2,10 @@
 (function() {
     "use strict";
 
-    const global = {
-        // UIModules: {}
-    };
+    const global = {};
     let Modules = {},
-        UIModules = {},
         Components = {},
+        ComponentNames = [],
         TemplateCache = {
             hash: [],
             templates: [],
@@ -34,6 +32,7 @@
     };
     //defines a component
     window.defineComp = function(compName, initMethod, opt) {
+        compName = compName.toLowerCase();
         if(Components.hasOwnProperty(compName)) {
             console.error("Component name '"+ compName +"' already taken");
         }
@@ -41,7 +40,7 @@
             name: compName,
             init: initMethod
         };
-
+        ComponentNames.push(compName);
         if (typeof opt === "object") {
             compMeta.templatePath = opt.templatePath || null
         }
@@ -50,10 +49,11 @@
     };
     //defines a UI module
     window.defineUI = function(uiName, initMethod) {
-        if(UIModules.hasOwnProperty(uiName)) {
-            console.error("UI Module name '"+ uiName +"' already taken");
-        }
-        UIModules[uiName] = initMethod;
+        throw("defineUI is deprecated");
+        // if(UIModules.hasOwnProperty(uiName)) {
+        //     console.error("UI Module name '"+ uiName +"' already taken");
+        // }
+        // UIModules[uiName] = initMethod;
     };
 
     function getTemplate(templatePath, fn) {
@@ -74,14 +74,6 @@
         }
     }
 
-    function initUIModule(moduleName, $ele) {
-        if (!UIModules.hasOwnProperty(moduleName)) return;
-        let ctx = {};
-        if ($ele.data("context") ) return;
-        $ele.data("context", ctx);
-        UIModules[moduleName].call(ctx, global, $ele);
-    }
-
     /* GLOBAL */
     global.onComponentLoaded = new Rx.Subject();
 
@@ -93,27 +85,13 @@
         return $section.data("context");
     };
     global.initUI = function($element) {
-        let moduleName = $element.prop("tagName").toLowerCase();
-        if (!UIModules.hasOwnProperty(moduleName)) {
-            //@todo error "element is not a uiModule"
-            for(moduleName in UIModules) {
-                if (!UIModules.hasOwnProperty(moduleName)) continue;
-                $(moduleName, $element).each(function(index, ele) {
-                    initUIModule(moduleName, $(ele));
-                });
-            }
-            // //@todo upgradeAllRegistered is a workaround
-            // componentHandler.upgradeAllRegistered();
-            return;
-        }
-        initUIModule(moduleName, $element);
+        throw("initUI is deprecated");
     };
     global.initAllUI = function($parent) {
         throw("initAllUI is deprecated -> use initUI");
     };
     global.initUIin = function($parent) {
         throw("initAllUI is deprecated -> use initUI");
-
     };
 
     //@todo overwriteable error functions    think through
@@ -127,7 +105,7 @@
     let loadingCompsCtx = [];
     global.loadComponent = function(componentName, sectionName, args) {
         loadingCompsCtx = [];
-        loadComponent(componentName, sectionName, args, function() {
+        loadComponentInSection(componentName, sectionName, args, function() {
             initLoadedComps();
         });
     };
@@ -140,7 +118,53 @@
         }
         loadingCompsCtx = [];
     }
-    function loadComponent(componentName, sectionName, args, fn) {
+    function loadComponent(componentName, $element, fn) {
+        if ($element.data("context") ) {
+            fn();
+            return;
+        }
+        let template = Components[componentName].templatePath;
+        let ctx = {};
+        loadingCompsCtx.push(ctx);
+        $element.data("context", ctx);
+
+        if (template) {
+            getTemplate(template, (data) => {
+                $element.html(data).promise().done(function(){
+                    loadComponents($element, function() {
+                        if(typeof fn === "function") fn();
+                    });
+                    Components[componentName].init.call(ctx, global, $element);
+                    global.onComponentLoaded.next(componentName);
+                });
+            });
+        } else{
+            Components[componentName].init.call(ctx, global, $element);
+            if(typeof fn === "function") fn();
+            global.onComponentLoaded.next(componentName);
+        }
+    }
+    function loadAllComponents($container, fn) {
+        let count = 0;
+        $(ComponentNames.join(", "), $container).each(function(index, value) {
+            let compName = value.tagName.toLowerCase();
+            count++;
+            loadComponent(compName, $(value), () => {
+                count--;
+                if (count < 1) {
+                    fn();
+                }
+            });
+        });
+        // count--;
+        if (count < 1) {
+            fn();
+        }
+    }
+
+
+
+    function loadComponentInSection(componentName, sectionName, args, fn) {
         if (!Components.hasOwnProperty(componentName)) {
             throw Error("component with name '"+ componentName +"' not found");
         }
@@ -154,40 +178,44 @@
         if (oldCtx && oldCtx.hasOwnProperty("onDiscard") && typeof oldCtx.onDiscard === "function") {
             oldCtx.onDiscard.call(oldCtx);
         }
-        let template = Components[componentName].templatePath;
-        let ctx = {};
 
-        loadingCompsCtx.push(ctx);
         $section.empty();
         $section.removeClass();
         $section.addClass(componentName);
-        $section.data("context", ctx);
-
-        if (template) {
-            getTemplate(template, (data) => {
-                $section.html(data).promise().done(function(){
-                    global.initUI($section);
-                    loadComponents($section, function() {
-                        fn();
-                    });
-                    Components[componentName].init.call(ctx, global, $($section[0]), args);
-                    global.onComponentLoaded.next(componentName);
-                });
-            });
-        } else{
-            Components[componentName].init.call(ctx, global, $($section[0]), args);
+        $.removeData($section, "context");
+        loadComponent(componentName, $section, () => {
+            //load sub components
             fn();
-            global.onComponentLoaded.next(componentName);
-        }
+        });
     }
     function loadComponents($container, fn) {
         let sections = [];
-        let count = 1;
         let $sections = $("section", $container);
+        let count = 1;
+        // step 2
+        let loadComponentTags = () => {
+            let count = 0;
+            $(ComponentNames.join(", "), $container).each(function(index, value) {
+                let compName = value.tagName.toLowerCase();
+                count++;
 
+                loadComponent(compName, $(value), () => {
+                    count--;
+                    if (count < 1) {
+                        fn();
+                    }
+                });
+                // loadComponent
+            });
+            // count--;
+            if (count < 1) {
+                fn();
+            }
+        };
+        // step 1
         for(;count < $sections.length + 1; count++) {
             let sectionName = $($sections[count - 1]).attr("name"),
-                defaultComp = $($sections[count - 1]).attr("default");
+                defaultComp = $($sections[count - 1]).attr("default").toLowerCase();
 
             if (!sectionName) {
                 console.error("show error section's need a name attribute");
@@ -205,73 +233,18 @@
                     return;
                 }
                 //loadComp
-                loadComponent(defaultComp, sectionName, {}, function () {
+                loadComponentInSection(defaultComp, sectionName, {}, function () {
                     count--;
                     if (count < 1) {
-                        fn();
+                        loadComponentTags();
                     }
                 });
             }
         }
         count--;
         if (count < 1) {
-            fn();
+            loadComponentTags();
         }
-    }
-
-    /**
-     * Created by https://github.com/StephanHoyer/smoke-signal
-     */
-    function observer(options) {
-        var listeners = [];
-        var api = {
-            push: function (listener) {
-                if (listeners.indexOf(listener) < 0) {
-                    listeners.push(listener)
-                }
-                return {
-                    pause: function () {
-                        api.pull(listener)
-                    },
-                    resume: function () {
-                        api.push(listener)
-                    }
-                }
-            },
-            pull: function (listener) {
-                var index = listeners.indexOf(listener);
-                if (index > -1) {
-                    listeners.splice(index, 1)
-                }
-                return api
-            },
-            once: function (listener) {
-                var handler = api.push(function () {
-                    listener.apply(null, arguments);
-                    handler.pause()
-                });
-                return handler
-            },
-            trigger: function () {
-                var args = arguments;
-                [].concat(listeners).map(function (listener) {
-                    try {
-                        listener.apply(null, args)
-                    } catch (e) {
-                        if (options && options.onError) {
-                            options.onError(e)
-                        } else if (options && options.logExceptions) {
-                            console.error(e)
-                        }
-                    }
-                });
-                return api
-            },
-            clear: function () {
-                listeners = []
-            }
-        };
-        return api
     }
 
 
@@ -283,8 +256,6 @@
             Modules[module].call(context, global);
             global[module] = context;
         }
-        // //init UI modules
-        global.initUI($("body"));
         // load components
         loadingCompsCtx = [];
         loadComponents($("body"), function() {
@@ -292,3 +263,14 @@
         });
     };
 })();
+
+// let observer = new MutationObserver(function(mutations) {
+//     mutations.forEach(function(mutation) {
+//         console.log(mutation.type);
+//     });
+// });
+// observer.observe($element[0], {
+//     attributes: true,
+//     childList: true,
+//     characterData: true
+// });
