@@ -1,4 +1,13 @@
 //core
+(function( $ ) {
+    $.fn.getComponent = function() {
+        if (!this[0].isComponent) {
+            return false;
+        }
+        return this[0].getComponent();
+    };
+
+}( jQuery ));
 (function() {
     "use strict";
 
@@ -6,6 +15,7 @@
     let Modules = {},
         Components = {},
         ComponentNames = [],
+        loadingCompsCtx = [],
         TemplateCache = {
             hash: [],
             templates: [],
@@ -49,6 +59,7 @@
     };
     //defines a UI module
     window.defineUI = function(uiName, initMethod) {
+        //@todo deprecated
         throw("defineUI is deprecated");
         // if(UIModules.hasOwnProperty(uiName)) {
         //     console.error("UI Module name '"+ uiName +"' already taken");
@@ -102,11 +113,12 @@
         throw new Error(msg);
     };
 
-    let loadingCompsCtx = [];
-    global.loadComponent = function(componentName, sectionName, args) {
+    global.loadComponent = function($element, fn) {
+        let compName = $element.prop("tagName").toLowerCase();
         loadingCompsCtx = [];
-        loadComponentInSection(componentName, sectionName, args, function() {
+        loadComponent(compName, $element, (...args) => {
             initLoadedComps();
+            if (typeof fn === "function") fn(...args);
         });
     };
     function initLoadedComps() {
@@ -118,21 +130,34 @@
         }
         loadingCompsCtx = [];
     }
+
+    class Component {
+        constructor(name) {
+            this.name = name;
+        }
+
+    }
     function loadComponent(componentName, $element, fn) {
-        if ($element.data("context") ) {
-            fn();
+        if ($element[0].isComponent ) {
+            fn($element[0].getComponent());
             return;
         }
-        let template = Components[componentName].templatePath;
-        let ctx = {};
+        let template = false;
+        if (typeof Components[componentName] === "object" && Components[componentName].hasOwnProperty("templatePath")) {
+            template = Components[componentName].templatePath;
+        }
+        let ctx = new Component(componentName);
         loadingCompsCtx.push(ctx);
-        $element.data("context", ctx);
-
+        // $element.data("context", ctx);
+        $element[0].isComponent = true;
+        $element[0].getComponent = () => {
+            return ctx;
+        };
         if (template) {
             getTemplate(template, (data) => {
                 $element.html(data).promise().done(function(){
-                    loadComponents($element, function() {
-                        if(typeof fn === "function") fn();
+                    loadAllComponents($element, function() {
+                        if(typeof fn === "function") fn(ctx);
                     });
                     Components[componentName].init.call(ctx, global, $element);
                     global.onComponentLoaded.next(componentName);
@@ -140,7 +165,9 @@
             });
         } else{
             Components[componentName].init.call(ctx, global, $element);
-            if(typeof fn === "function") fn();
+            loadAllComponents($element, function() {
+                if(typeof fn === "function") fn(ctx);
+            });
             global.onComponentLoaded.next(componentName);
         }
     }
@@ -162,92 +189,6 @@
         }
     }
 
-
-
-    function loadComponentInSection(componentName, sectionName, args, fn) {
-        if (!Components.hasOwnProperty(componentName)) {
-            throw Error("component with name '"+ componentName +"' not found");
-        }
-        let $section = $('section[name="'+ sectionName +'"]');
-        if ($section.length === 0) {
-            throw Error("section with name '"+ sectionName +"' not found");
-        }
-        $section = $($section[0]);
-        //unload current component
-        let oldCtx = $section.data("context");
-        if (oldCtx && oldCtx.hasOwnProperty("onDiscard") && typeof oldCtx.onDiscard === "function") {
-            oldCtx.onDiscard.call(oldCtx);
-        }
-
-        $section.empty();
-        $section.removeClass();
-        $section.addClass(componentName);
-        $.removeData($section, "context");
-        loadComponent(componentName, $section, () => {
-            //load sub components
-            fn();
-        });
-    }
-    function loadComponents($container, fn) {
-        let sections = [];
-        let $sections = $("section", $container);
-        let count = 1;
-        // step 2
-        let loadComponentTags = () => {
-            let count = 0;
-            $(ComponentNames.join(", "), $container).each(function(index, value) {
-                let compName = value.tagName.toLowerCase();
-                count++;
-
-                loadComponent(compName, $(value), () => {
-                    count--;
-                    if (count < 1) {
-                        fn();
-                    }
-                });
-                // loadComponent
-            });
-            // count--;
-            if (count < 1) {
-                fn();
-            }
-        };
-        // step 1
-        for(;count < $sections.length + 1; count++) {
-            let sectionName = $($sections[count - 1]).attr("name"),
-                defaultComp = $($sections[count - 1]).attr("default").toLowerCase();
-
-            if (!sectionName) {
-                console.error("show error section's need a name attribute");
-                return;
-            }
-            //check if section name is already taken
-            if (sections.indexOf(sectionName) > -1) {
-                console.error("there are duplicate sections with name '" + sectionName + "'", sections);
-                return;
-            }
-            sections.push(sectionName);
-            if (defaultComp) {
-                if (!Components.hasOwnProperty(defaultComp)) {
-                    console.error("no component with this name");
-                    return;
-                }
-                //loadComp
-                loadComponentInSection(defaultComp, sectionName, {}, function () {
-                    count--;
-                    if (count < 1) {
-                        loadComponentTags();
-                    }
-                });
-            }
-        }
-        count--;
-        if (count < 1) {
-            loadComponentTags();
-        }
-    }
-
-
     window.onload = function() {
         //init modules
         for(let module in Modules) {
@@ -258,7 +199,7 @@
         }
         // load components
         loadingCompsCtx = [];
-        loadComponents($("body"), function() {
+        loadAllComponents($("body"), function() {
             initLoadedComps();
         });
     };

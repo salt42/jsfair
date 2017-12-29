@@ -1,6 +1,3 @@
-/**
- * Created by salt on 28.10.2017.
- */
 "use strict";
 
 // console.log(require('module').Module);

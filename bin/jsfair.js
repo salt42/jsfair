@@ -1,3 +1,3 @@
 #!/usr/bin/env node --use_strict
-// require('../server/main.js');
-// eventuel debug server oder ähnlich
+let fs = require("fs");
+require('../main.js')(fs.realpathSync(__dirname + "/../test"));
