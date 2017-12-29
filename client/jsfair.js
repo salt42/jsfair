@@ -1,7 +1,7 @@
 //core
 (function( $ ) {
     $.fn.getComponent = function() {
-        if (!this[0].isComponent) {
+        if (this.length === 0 || !this[0].isComponent) {
             return false;
         }
         return this[0].getComponent();
