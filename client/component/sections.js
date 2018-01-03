@@ -36,6 +36,7 @@
             let $comp = $("<" + compName + ">");
             $element.append($comp);
             global.loadComponent($comp, (ctx) => {
+
             });
         };
         this.disableSection = () => {
