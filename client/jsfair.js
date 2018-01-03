@@ -116,7 +116,6 @@
     global.loadComponent = function($element, fn) {
         let compName = $element.prop("tagName").toLowerCase();
         loadComponent(compName, $element, (ctxArray) => {
-            initComponents(ctxArray);
             if (typeof fn === "function") fn(ctxArray[ctxArray.length - 1]);
         });
     };
@@ -158,6 +157,9 @@
                         ctxArray.push(ctx);
                         if(typeof fn === "function") fn(ctxArray);
                     });
+                    if (ctx.hasOwnProperty("onLoad") && typeof ctx.onLoad === "function") {
+                        ctx.onLoad();
+                    }
                     global.onComponentLoaded.next(componentName);
                 });
             });
@@ -166,6 +168,9 @@
             loadAllComponents($element, function() {
                 if(typeof fn === "function") fn(ctx);
             });
+            if (ctx.hasOwnProperty("onLoad") && typeof ctx.onLoad === "function") {
+                ctx.onLoad();
+            }
             global.onComponentLoaded.next(componentName);
         }
     }
@@ -200,7 +205,7 @@
         }
         // load components
         loadAllComponents($("body"), function(ctxArray) {
-            initComponents(ctxArray);
+            //@todo
         });
     };
 })();
