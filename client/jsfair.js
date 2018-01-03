@@ -115,20 +115,18 @@
 
     global.loadComponent = function($element, fn) {
         let compName = $element.prop("tagName").toLowerCase();
-        loadingCompsCtx = [];
-        loadComponent(compName, $element, (...args) => {
-            initLoadedComps();
-            if (typeof fn === "function") fn(...args);
+        loadComponent(compName, $element, (ctxArray) => {
+            initComponents(ctxArray);
+            if (typeof fn === "function") fn(ctxArray[ctxArray.length - 1]);
         });
     };
-    function initLoadedComps() {
-        for(let i = 0; i < loadingCompsCtx.length; i++) {
-            let compCtx = loadingCompsCtx[i];
+    function initComponents(ctxArray) {
+        for(let i = 0; i < ctxArray.length; i++) {
+            let compCtx = ctxArray[i];
             if (compCtx.hasOwnProperty("onLoad") && typeof compCtx.onLoad === "function") {
                 compCtx.onLoad();
             }
         }
-        loadingCompsCtx = [];
     }
 
     class Component {
@@ -147,7 +145,6 @@
             template = Components[componentName].templatePath;
         }
         let ctx = new Component(componentName);
-        loadingCompsCtx.push(ctx);
         // $element.data("context", ctx);
         $element[0].isComponent = true;
         $element[0].getComponent = () => {
@@ -156,10 +153,11 @@
         if (template) {
             getTemplate(template, (data) => {
                 $element.html(data).promise().done(function(){
-                    loadAllComponents($element, function() {
-                        if(typeof fn === "function") fn(ctx);
-                    });
                     Components[componentName].init.call(ctx, global, $element);
+                    loadAllComponents($element, function(ctxArray) {
+                        ctxArray.push(ctx);
+                        if(typeof fn === "function") fn(ctxArray);
+                    });
                     global.onComponentLoaded.next(componentName);
                 });
             });
@@ -173,19 +171,22 @@
     }
     function loadAllComponents($container, fn) {
         let count = 0;
+        let ctxArray = [];
+
         $(ComponentNames.join(", "), $container).each(function(index, value) {
             let compName = value.tagName.toLowerCase();
             count++;
-            loadComponent(compName, $(value), () => {
+            loadComponent(compName, $(value), (ctx) => {
                 count--;
+                ctxArray.push(ctx);
                 if (count < 1) {
-                    fn();
+                    fn(ctxArray);
                 }
             });
         });
         // count--;
         if (count < 1) {
-            fn();
+            fn(ctxArray);
         }
     }
 
@@ -198,9 +199,8 @@
             global[module] = context;
         }
         // load components
-        loadingCompsCtx = [];
-        loadAllComponents($("body"), function() {
-            initLoadedComps();
+        loadAllComponents($("body"), function(ctxArray) {
+            initComponents(ctxArray);
         });
     };
 })();
