@@ -120,12 +120,12 @@
         });
     };
     function initComponents(ctxArray) {
-        for(let i = 0; i < ctxArray.length; i++) {
-            let compCtx = ctxArray[i];
-            if (compCtx.hasOwnProperty("onLoad") && typeof compCtx.onLoad === "function") {
-                compCtx.onLoad();
-            }
-        }
+        // for(let i = 0; i < ctxArray.length; i++) {
+        //     let compCtx = ctxArray[i];
+        //     if (compCtx.hasOwnProperty("onLoad") && typeof compCtx.onLoad === "function") {
+        //         compCtx.onLoad();
+        //     }
+        // }
     }
 
     class Component {
@@ -156,22 +156,24 @@
                     loadAllComponents($element, function(ctxArray) {
                         ctxArray.push(ctx);
                         if(typeof fn === "function") fn(ctxArray);
+
+                        if (ctx.hasOwnProperty("onLoad") && typeof ctx.onLoad === "function") {
+                            ctx.onLoad();
+                        }
+                        global.onComponentLoaded.next(componentName);
                     });
-                    if (ctx.hasOwnProperty("onLoad") && typeof ctx.onLoad === "function") {
-                        ctx.onLoad();
-                    }
-                    global.onComponentLoaded.next(componentName);
                 });
             });
         } else{
             Components[componentName].init.call(ctx, global, $element);
-            loadAllComponents($element, function() {
+            loadAllComponents($element, function(ctxArray) {
+                ctxArray.push(ctx);
                 if(typeof fn === "function") fn(ctx);
+                if (ctx.hasOwnProperty("onLoad") && typeof ctx.onLoad === "function") {
+                    ctx.onLoad();
+                }
+                global.onComponentLoaded.next(componentName);
             });
-            if (ctx.hasOwnProperty("onLoad") && typeof ctx.onLoad === "function") {
-                ctx.onLoad();
-            }
-            global.onComponentLoaded.next(componentName);
         }
     }
     function loadAllComponents($container, fn) {
