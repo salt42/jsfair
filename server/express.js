@@ -2,8 +2,8 @@
  * Created by salt on 28.10.2017.
  */
 "use strict";
-var config = require('./config');
-var log = require('./log')("express");
+var config = require('./jsfair/config');
+var log = require('./jsfair/log')("express");
 var hook    = require('./hook');
 var express = require('express');
 var path = require('path');
