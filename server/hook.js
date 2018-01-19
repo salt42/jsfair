@@ -3,6 +3,7 @@
  */
 "use strict";
 var hookListener = new Map();
+var hookNames = {};
 let hook = {
     in: function(type, args, func) {
         if (typeof args === "function") {
@@ -20,6 +21,7 @@ let hook = {
         hookListener.set(type, list);
     },
     trigger: function(type, ...args) {
+        hookNames[type] = true;
         if (hookListener.has(type)) {
             let hooks = hookListener.get(type);
             for(let i = 0; i < hooks.length; i++) {
@@ -28,6 +30,7 @@ let hook = {
         }
     },
     getTrigger: function(type, fn) {
+        hookNames[type] = true;
         if (hookListener.has(type)) {
             let hooks = hookListener.get(type);
             for(let i = 0; i < hooks.length; i++) {

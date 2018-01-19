@@ -54,7 +54,7 @@ module.exports = function(rootPath) {
             console.log(e);
         }
         db.init();
-        express();
+        express.init();
     } catch (e) {
         console.log(e);
     }
