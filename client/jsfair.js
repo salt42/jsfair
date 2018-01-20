@@ -133,6 +133,19 @@
             this.name = name;
         }
 
+        observeAttributes(fn) {
+//todo
+// let observer = new MutationObserver(function(mutations) {
+//     mutations.forEach(function(mutation) {
+//         console.log(mutation.type);
+//     });
+// });
+// observer.observe($element[0], {
+//     attributes: true,
+//     childList: true,
+//     characterData: true
+// });
+        }
     }
     function loadComponent(componentName, $element, fn) {
         if ($element[0].isComponent ) {
@@ -211,14 +224,3 @@
         });
     };
 })();
-
-// let observer = new MutationObserver(function(mutations) {
-//     mutations.forEach(function(mutation) {
-//         console.log(mutation.type);
-//     });
-// });
-// observer.observe($element[0], {
-//     attributes: true,
-//     childList: true,
-//     characterData: true
-// });
