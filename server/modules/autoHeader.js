@@ -1,5 +1,6 @@
 "use strict";
-var config = require('jsfair/config');
+var config  = require('jsfair/config');
+let fs      = require("fs");
 
 hookIn.http_init(function(app) {
     app.locals.headerIncludes = '<script src="/jsfair/libsmin.js"></script>';
@@ -8,8 +9,14 @@ hookIn.http_init(function(app) {
 function getConfiguredModules() {
 
 }
-function searchModules() {
+function searchComponents(path) {
+    let dir = fs.readdirSync(path);// Returns an array of filenames excluding '.' and '..'.
+    for (let i = 0; i < dir.length; i++) {
+
+    }
+
+}
+function searchModules(path) {
     //@todo search all module js files to include
     // config["http"]["staticDirs"][i]
 }
-function searchComponents() {}
