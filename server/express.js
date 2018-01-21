@@ -2,22 +2,21 @@
  * Created by salt on 28.10.2017.
  */
 "use strict";
-var config = require('./jsfair/config');
-var log = require('./jsfair/log')("express");
-var hook    = require('./hook');
-var express = require('express');
-var path = require('path');
-var favicon = require('serve-favicon');
-// var logger = require('morgan');
-var cookieParser = require('cookie-parser');
-var bodyParser = require('body-parser');
+var config          = require('./jsfair/config');
+var log             = require('./jsfair/log')("express");
+var hook            = require('./hook');
+var express         = require('express');
+var path            = require('path');
+var favicon         = require('serve-favicon');
+var cookieParser    = require('cookie-parser');
+var bodyParser      = require('body-parser');
 
 var app = express();
-var PORT = parseInt(config.http.port);
+var PORT = parseInt(config.server.http.port);
 
 // app.locals.headerIncludes = '<headerincludes></headerincludes>';
 // view engine setup
-app.set('views', path.join(rootPath, config["http"]["viewsDir"]));
+app.set('views', path.join(rootPath, config.server.http.viewsDir));
 app.set('view engine', 'hbs');
 
 // uncomment after placing your favicon in /public
@@ -27,15 +26,15 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
 
-for (let i = 0; i < config["http"]["staticDirs"].length; i++) {
-    app.use(express.static(path.join(rootPath, config["http"]["staticDirs"][i])));
+for (let i = 0; i < config.server.http.staticDirs.length; i++) {
+    app.use(express.static(path.join(rootPath, config.server.http.staticDirs[i])));
 }
 app.use("/jsfair", express.static(path.join(jsfairPath, 'client')));
 
 
 
 let isPortTaken = function(port, fn) {
-    let net = require('net')
+    let net = require('net');
     let tester = net.createServer()
         .once('error', function (err) {
             if (err.code !== 'EADDRINUSE') return fn(err)

@@ -10,7 +10,9 @@ let path        = require('path');
 let Database    = require('better-sqlite3');
 let config      = require('./config');
 
-let dbFilePath          = path.join(rootPath, config.dbFile);
+let dbFilePath  = path.join(rootPath, config.server.database.dbFile);
+let sqlPath     = path.join(rootPath, config.server.database.sqlPath);
+let sqlCache    = config.server.database.sqCache;
 if (!fs.existsSync(dbFilePath)) {
     throw new Error("no database file: " + dbFilePath);
 }
@@ -26,10 +28,10 @@ function getStatement(name) {
 
     if (!sqlQueryRegistry.has(name)) {
         //load query from file
-        let path = config.db.sqlQueryFolder + name + ".sql";
+        let path = sqlPath + name + ".sql";
         if (fs.existsSync(path)) {
             query = fs.readFileSync(path).toString();
-            if(config.db.sqlQueryCache) {
+            if(sqlCache) {
                 sqlQueryRegistry.set(name, query);
             }
             return query;

@@ -31,8 +31,8 @@ module.exports = function(rootPath) {
         let express = require("./server/express");
         log("Start %s Server", conf.appName);
         try {
-            for (let x = 0; x < conf.modulePaths.length; x++) {
-                let loadPath = fs.realpathSync(rootPath + "/" + conf.modulePaths[x]);
+            for (let x = 0; x < conf.server.modulePaths.length; x++) {
+                let loadPath = fs.realpathSync(rootPath + "/" + conf.server.modulePaths[x]);
                 let dir = fs.readdirSync(loadPath);
                 for (let i = 0; i < dir.length; i++) {
                     let error = false;
