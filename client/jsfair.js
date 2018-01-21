@@ -60,6 +60,7 @@
     //defines a UI module
     window.defineUI = function(uiName, initMethod) {
         //@todo deprecated
+        console.trace();
         throw("defineUI is deprecated");
         // if(UIModules.hasOwnProperty(uiName)) {
         //     console.error("UI Module name '"+ uiName +"' already taken");
@@ -96,12 +97,15 @@
         return $section.data("context");
     };
     global.initUI = function($element) {
+        console.trace();
         throw("initUI is deprecated");
     };
     global.initAllUI = function($parent) {
+        console.trace();
         throw("initAllUI is deprecated -> use initUI");
     };
     global.initUIin = function($parent) {
+        console.trace();
         throw("initAllUI is deprecated -> use initUI");
     };
 
