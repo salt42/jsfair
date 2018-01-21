@@ -50,17 +50,7 @@ let isPortTaken = function(port, fn) {
 
 module.exports = {};
 module.exports.init = function () {
-    app.locals.headerIncludes = " ";
-    // hook.getTrigger("http_createRoute", function(trigger, args) {
-    //     log("create router %s", args[0]);
-    //     if (!args || !args[0]) {
-    //         log("ERROR: No url defined");
-    //         return;
-    //     }
-    //     let router = express.Router();
-    //     trigger(router);
-    //     app.use(args[0], router);
-    // });
+    hook.trigger("http_init", app);
     // ****************** routes *************************
     hook.getTrigger("http_createRoute", function(trigger, args) {
         log("create router %s", args[0]);
