@@ -1,0 +1,18 @@
+split-section {
+    display: flex;
+    /* flex-direction: row | row-reverse | column | column-reverse; */
+    flex-direction: row;
+    flex-wrap: nowrap;
+    --test-var: 10px;
+    height: 80vh;
+}
+split-section .item {
+    background-color: gold;
+    height: 100%;
+    flex-grow: 1;
+}
+split-section .handle {
+    background-color: grey;
+    width: var(--test-var);
+    height: 100%;
+}
