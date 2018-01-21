@@ -15,6 +15,7 @@
         let _compName = $element.attr("static") || $element.attr("default");
 
         if (!sectionID || sectionID === "") {
+            console.log($element);
             throw new Error("section need id!");
         }
 
