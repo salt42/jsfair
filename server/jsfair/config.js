@@ -23,6 +23,8 @@ var defaults = {
         }
     },
     client: {
+        defaultModules: [],
+        defaultComponent: ["sections"],
         modulePaths: ["/server/routes"],
         componentPaths: ["/client/component"],
     },
