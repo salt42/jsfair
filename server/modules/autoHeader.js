@@ -10,15 +10,15 @@ hookIn.http_init(function(app) {
     let Modules = [];
     let Components = [];
     let moduleResult ={};
-    let comp= [];
+    let comp = [];
 
     for(let i = 0; i < config.client.componentPaths.length; i++){
-        comp = searchComponents(ROOT_PATH + config.client.componentPaths[i]);
-        Components = Components.components.concat(comp);
+        comp = searchComponents(config.client.componentPaths[i]);
+        Components = Components.concat(comp);
     }
     for (let i = 0; i < config.client.modulePaths.length; i++){
-        moduleResult = searchModules(ROOT_PATH + config.client.modulePaths[i]);
-        Modules = Components.concat(moduleResult.modules);
+        moduleResult = searchModules(config.client.modulePaths[i]);
+        Modules = Modules.concat(moduleResult.modules);
         Components = Components.concat(moduleResult.components);
     }
     /*endregion*/
@@ -26,28 +26,33 @@ hookIn.http_init(function(app) {
     app.locals.headerIncludes += '<script src="/jsfair/jsfair.js"></script>';
     // components
     for(let i = 0; i < Components.length; i++){
+        console.log(createCssTag(Components[i]));
+        console.log(createScriptTag(Components[i]));
         app.locals.headerIncludes += createCssTag(Components[i]);
         app.locals.headerIncludes += createScriptTag(Components[i]);
     }
     // modules
     for(let i = 0; i < Modules.length; i++){
         app.locals.headerIncludes += createScriptTag(Modules[i]);
+        console.log(createScriptTag(Modules[i]));
     }
 
 });
 function createScriptTag(object) {
-    let incPath = object.scriptPath.replace(ROOT_PATH, "");
+    let rootPathPart = Path.join(ROOT_PATH,object.dir);
+    let incPath = object.scriptPath.replace(rootPathPart, "");
     return '<script src="' + incPath + '"></script>';
 }
 function createCssTag(object) {
-    let incPath = (object.cssPath === null) ? null : object.cssPath.replace(ROOT_PATH, "");
+    let rootPathPart = Path.join(ROOT_PATH,object.dir);
+    let incPath = (object.cssPath === null) ? null : object.cssPath.replace(rootPathPart, "");
     return (incPath === null) ? "" : '<link href="' + incPath + '" rel="stylesheet>';
 }
 function getConfiguredModules() {
 
 }
 /* region components */
-function readCompDirectory(name, path) {
+function readCompDirectory(name, relPath, path) {
     let noExt = Path.join(path, name);
     let scriptPath = noExt + ".js";
     if (!fs.existsSync(scriptPath)) return null;
@@ -56,9 +61,11 @@ function readCompDirectory(name, path) {
     comp.scriptPath = scriptPath;
     comp.cssPath  = (fs.existsSync(noExt + ".css" )) ? noExt + ".css"  : null;
     comp.htmlPath = (fs.existsSync(noExt + ".html")) ? noExt + ".html" : null;
+    comp.dir = relPath;
     return comp;
 }
-function searchComponents(path) {
+function searchComponents(relPath) {
+    let path = ROOT_PATH + relPath;
     let comps = [];
     if (!fs.existsSync(path))return;
     let dir = fs.readdirSync(path);// Returns an array of filenames excluding '.' and '..'.
@@ -70,16 +77,17 @@ function searchComponents(path) {
                 scriptPath: fullPath,
                 cssPath: null,
                 htmlPath: null,
+                dir: relPath,
             });
         } else {
-            comps.push(readCompDirectory(dir[i], fullPath));
+            comps.push(readCompDirectory(dir[i], relPath, fullPath));
         }
     }
     return comps;
 }
 /*endregion*/
 /* region modules */
-function readModuleDirectory(name, path) {
+function readModuleDirectory(name, relPath, path) {
     let scriptPath = path + "/" + name + ".js";
     let moduleJS = [];
     let subModuleJS = [];
@@ -92,18 +100,23 @@ function readModuleDirectory(name, path) {
             moduleJS.push({
                 name: name,
                 scriptPath: scriptPath,
+                dir: relPath,
             });
         } else {
-            let subDir = path + "/" + dir[i];
+            let subDir = Path.join(path, dir[i]);
             if (!fs.statSync(subDir).isDirectory()) {
                 // is file
                 subModuleJS.push({
                     name: Path.basename(subDir, ".js"),
                     scriptPath: subDir,
+                    dir: relPath,
                 });
             } else {
                 if (dir[i] == "component" || dir[i] == "components") {
-                    subComponents = subComponents.concat(searchComponents(subDir));
+                    let a = searchComponents(Path.join(relPath, dir[i]));
+                    if (a){
+                        subComponents = subComponents.concat(searchComponents(Path.join(relPath, dir[i])));
+                    }
                 }
             }
         }
@@ -113,14 +126,15 @@ function readModuleDirectory(name, path) {
         components: subComponents,
     }
 }
-function searchModules(path) {
+function searchModules(relPath) {
     //@todo search all module js files to include
     // config["http"]["staticDirs"][i]
+    let path = ROOT_PATH + relPath;
     if (!fs.existsSync(path))return;
     let dir = fs.readdirSync(path);// Returns an array of filenames excluding '.' and '..'.
     let modules = {
         modules: [],
-        components: []
+        components: [],
     };
     let submodule = modules;
     for (let i = 0; i < dir.length; i++) {
@@ -130,9 +144,10 @@ function searchModules(path) {
             modules.modules.push({
                 name: Path.basename(fullPath, ".js"),
                 scriptPath: fullPath,
+                dir: relPath,
             });
         } else {
-            submodule = readModuleDirectory(dir[i], fullPath);
+            submodule = readModuleDirectory(dir[i], relPath, fullPath);
             modules.modules = modules.modules.concat(submodule.modules);
             modules.components = modules.components.concat(submodule.components);
         }
