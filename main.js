@@ -12,8 +12,8 @@ let hook    = require('./server/hook');
 let hookProxyHandler = {
     get: function(target, name) {
         return function(...args) {
-            if (args.length < 2) {
-                throw new Error("At least give me a function, please!");
+            if (args.length < 1) {
+                throw new Error("Hook '" + name + "' not enough arguments -> (" + args.length + ")");
             }
             let func = args.splice(-1,1)[0];
             hook.in(name, args, func);
@@ -23,7 +23,7 @@ let hookProxyHandler = {
 
 module.exports = function(rootPath) {
     global.hookIn = new Proxy({}, hookProxyHandler);
-    global.rootPath = fs.realpathSync(rootPath);
+    global.ROOT_PATH = fs.realpathSync(rootPath);
     global.jsfairPath = fs.realpathSync(__dirname);
     try {
         let conf = require('jsfair/config')(rootPath + "/conf.json");

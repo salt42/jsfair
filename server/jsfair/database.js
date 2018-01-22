@@ -10,8 +10,8 @@ let path        = require('path');
 let Database    = require('better-sqlite3');
 let config      = require('./config');
 
-let dbFilePath  = path.join(rootPath, config.server.database.dbFile);
-let sqlPath     = path.join(rootPath, config.server.database.sqlPath);
+let dbFilePath  = path.join(ROOT_PATH, config.server.database.dbFile);
+let sqlPath     = path.join(ROOT_PATH, config.server.database.sqlPath);
 let sqlCache    = config.server.database.sqCache;
 if (!fs.existsSync(dbFilePath)) {
     throw new Error("no database file: " + dbFilePath);
