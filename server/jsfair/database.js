@@ -28,7 +28,7 @@ function getStatement(name) {
 
     if (!sqlQueryRegistry.has(name)) {
         //load query from file
-        let path = sqlPath + name + ".sql";
+        let path = sqlPath + "/" + name + ".sql";
         if (fs.existsSync(path)) {
             query = fs.readFileSync(path).toString();
             if(sqlCache) {
@@ -36,7 +36,7 @@ function getStatement(name) {
             }
             return query;
         } else {
-            throw new Error("sql sql file '"+ name +"' not found!");
+            throw new Error("sql sql file '"+ name +"' not found at: " + path);
         }
     } else {
         return sqlQueryRegistry.get(name);
