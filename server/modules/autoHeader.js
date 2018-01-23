@@ -160,6 +160,7 @@ function searchModules(relPath) {
     };
     let submodule = modules;
     for (let i = 0; i < dir.length; i++) {
+        if (dir[i] === "exampleWidget") continue; // skip example
         let fullPath = Path.join(path, dir[i]);
         if (!fs.statSync(fullPath).isDirectory()){
             //module name
