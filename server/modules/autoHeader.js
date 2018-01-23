@@ -3,79 +3,118 @@ var config  = require('jsfair/config');
 var log     = require('jsfair/log')("autoHeader");
 let fs      = require("fs");
 let Path    = require("path");
-let Components = [];
 let tagEnd = '\r\n\t\t';
+
 hookIn.http_init(function(app) {
-    /* region gather data*/
     let Modules = [];
     let Components = [];
-    let moduleResult ={};
-    let comp = [];
-    let preCss = "";
+
+    let preCss = '<!-- stylesheets -->' + tagEnd;
     let postCss = "";
-    let preScript = "";
+    let componentCss = "";
+    let componentAndModuleScript = "";
+    let preScript = '<!-- scripts -->' + tagEnd;
     let postScript = "";
 
+    /* region create header tags pre section */
     preScript += '<script src="/jsfair/libsmin.js"></script>' + tagEnd;
     preScript += '<script src="/jsfair/jsfair.js"></script>' + tagEnd;
 
-    for(let i = 0; i < config.client.preCss.length; i++){
-        preCss += createCssTag(config.client.preCss[i]);
+    if (config.client.preCss.length !== 0){
+        for(let i = 0; i < config.client.preCss.length; i++){
+            preCss += createCssTag(config.client.preCss[i]);
+        }
     }
-    for(let i = 0; i < config.client.preScript.length; i++){
-        preScript += createScriptTag(config.client.preScript[i]);
-    }
-
-    for(let i = 0; i < config.client.componentPaths.length; i++){
-        comp = searchComponents(config.client.componentPaths[i]);
-        Components = Components.concat(comp);
-    }
-    for (let i = 0; i < config.client.modulePaths.length; i++){
-        moduleResult = searchModules(config.client.modulePaths[i]);
-        Modules = Modules.concat(moduleResult.modules);
-        Components = Components.concat(moduleResult.components);
+    if (config.client.preScript.length !== 0){
+        for(let i = 0; i < config.client.preScript.length; i++){
+            preScript += createScriptTag(config.client.preScript[i]);
+        }
     }
     /*endregion*/
+
+    /* region create header tags post section */
+    if (config.client.postCss.length !== 0){
+        postCss = '<!-- post -->' + tagEnd;
+        for(let i = 0; i < config.client.postCss.length; i++){
+            postCss += createCssTag(config.client.preCss[i]);
+        }
+    }
+    if (config.client.postScript.length !== 0){
+        postScript = '<!-- post -->' + tagEnd;
+        for(let i = 0; i < config.client.postScript.length; i++){
+            postScript += createScriptTag(config.client.preScript[i]);
+        }
+    }
+    /*endregion*/
+
+    /* region gather data of components and modules */
+    if (config.client.componentPaths.length !== 0) {
+        for (let i = 0; i < config.client.componentPaths.length; i++) {
+            let comp = searchComponents(config.client.componentPaths[i]);
+            Components = Components.concat(comp);
+        }
+    }
+    if (config.client.modulePaths.length !== 0) {
+        for (let i = 0; i < config.client.modulePaths.length; i++) {
+            let moduleResult = searchModules(config.client.modulePaths[i]);
+            Modules = Modules.concat(moduleResult.modules);
+            Components = Components.concat(moduleResult.components);
+        }
+    }
+    /*endregion*/
+
+    /* region create header tags of components and modules */
     // components
-    for(let i = 0; i < Components.length; i++){
-        preCss += createCssTag(Components[i].cssPath);
-        preScript += createScriptTag(Components[i].scriptPath);
+    if (Components.length !== 0) {
+        componentCss += '<!-- components -->' + tagEnd;
+        componentAndModuleScript += '<!-- components -->' + tagEnd;
+        for (let i = 0; i < Components.length; i++) {
+            componentCss += createCssTag(Components[i].cssPath);
+            componentAndModuleScript += createScriptTag(Components[i].scriptPath);
+        }
     }
     // modules
-    for(let i = 0; i < Modules.length; i++){
-        preScript += createScriptTag(Modules[i].scriptPath);
+    if (Modules.length !== 0) {
+        componentAndModuleScript += '<!-- modules -->' + tagEnd;
+        for (let i = 0; i < Modules.length; i++) {
+            componentAndModuleScript += createScriptTag(Modules[i].scriptPath);
+        }
     }
-    global.headerIncludes += preCss;
-    global.headerIncludes += preScript;
+    /*endregion*/
 
+    global.headerIncludes += preCss    + componentCss             + postCss    + tagEnd;
+    global.headerIncludes += preScript + componentAndModuleScript + postScript;
 });
+
+/* region http_init() auxiliaries */
 function createScriptTag(path) {
     let incPath = createIncPath(path);
     return '<script src="' + incPath + '"></script>'+ tagEnd;
 }
 function createCssTag(path) {
     let incPath = (path === null) ? null : createIncPath(path);
-    return (incPath === null) ? "" : '<link href="' + incPath + '" rel="stylesheet">' + tagEnd; // autsch
+    return (incPath === null) ? "" : '<link href="' + incPath + '" rel="stylesheet">' + tagEnd;
 }
 function createIncPath(path){
     let staticDirs = config.server.http.staticDirs;
-    let result;
     path = path
         .replace(ROOT_PATH, "")
         .replace(/\\/g,"/");
     for (let i = 0; i < staticDirs.length; i++){
         staticDirs[i] = staticDirs[i].replace(/\\/g,"/");
         if (path.indexOf(staticDirs[i]) !== -1){
-            result = path.replace(staticDirs[i], "");
-            return result;
+            return path.replace(staticDirs[i], "");
         }
     }
     return path;
 }
+/*endregion*/
+
 function getConfiguredModules() {
 
 }
-/* region components */
+
+/* region auto read components */
 function readCompDirectory(name, path) {
     let comp = {};
     let noExt = Path.join(path, name);
@@ -111,7 +150,8 @@ function searchComponents(relPath) {
     return comps;
 }
 /*endregion*/
-/* region modules */
+
+/* region auto read modules */
 function readModuleDirectory(name, path) {
     let scriptPath = path + "/" + name + ".js";
     let moduleJS = [];
@@ -162,7 +202,7 @@ function searchModules(relPath) {
     for (let i = 0; i < dir.length; i++) {
         if (dir[i] === "exampleWidget") continue; // skip example
         let fullPath = Path.join(path, dir[i]);
-        if (!fs.statSync(fullPath).isDirectory()){
+        if (!fs.statSync(fullPath).isDirectory() && Path.extname(fullPath) === ".js" ){
             //module name
             modules.modules.push({
                 name: Path.basename(fullPath, ".js"),
