@@ -10,14 +10,25 @@ var path            = require('path');
 var favicon         = require('serve-favicon');
 var cookieParser    = require('cookie-parser');
 var bodyParser      = require('body-parser');
+var hbs             = require('express-hbs');
 
 var app = express();
 var PORT = parseInt(config.server.http.port);
 
-// app.locals.headerIncludes = '<headerincludes></headerincludes>';
 // view engine setup
-app.set('views', path.join(ROOT_PATH, config.server.http.viewsDir));
+global.headerIncludes = "";
+hbs.registerHelper('headerIncludes', function(text, options) {
+    return new hbs.SafeString(headerIncludes);
+});
+// Use `.hbs` for extensions and find partials in `views/partials`.
+app.engine('hbs', hbs.express4({
+    // partialsDir: __dirname + '/views/partials'
+    beautify: false,
+}));
+//aber mit den helper funcs eventuel noch
+//eventuel einfach ein anderes plugin versuchen,
 app.set('view engine', 'hbs');
+app.set('views', path.join(ROOT_PATH, config.server.http.viewsDir));
 
 // uncomment after placing your favicon in /public
 //app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
