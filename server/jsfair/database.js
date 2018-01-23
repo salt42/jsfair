@@ -68,7 +68,6 @@ function init() {
     hook.getTrigger("db_addMethod", function(trigger, args) {
         if (!args || !args[0]) {
             log("ERROR: No method name provided");
-            console.trace();
             return;
         }
         dbMethods[args[0]] = trigger(DB);
@@ -76,7 +75,6 @@ function init() {
     hook.getTrigger("db_addObject", function(trigger, args) {
         if (!args || !args[0]) {
             log("ERROR: No object name provided");
-            console.trace();
             return;
         }
         dbMethods[args[0]] = trigger(DB);
