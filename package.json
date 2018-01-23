@@ -19,6 +19,7 @@
     "colors": "^1.1.2",
     "cookie-parser": "^1.4.3",
     "express": "^4.16.2",
+    "express-hbs": "^1.0.4",
     "hbs": "^4.0.1",
     "js-beautify": "^1.7.5",
     "node-gyp": "^3.6.2",
