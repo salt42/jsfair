@@ -58,7 +58,6 @@ function save() {
 }
 
 function exitHandler(options, err) {
-    save();
     process.exit();
 }
 
