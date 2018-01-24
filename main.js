@@ -21,10 +21,6 @@ let hookProxyHandler = {
         }
     }
 };
-global.hookIn = new Proxy({}, hookProxyHandler);
-global.ROOT_PATH = fs.realpathSync(rootPath);
-global.jsfairPath = fs.realpathSync(__dirname);
-
 //handle arguments
 function helpPage(err) {
     console.log("Error: %s".red, err);
@@ -43,6 +39,10 @@ if (process.argv.indexOf('--root') > -1) {
 }
 
 const conf = require('jsfair/config')(rootPath + "/conf.json");
+global.hookIn = new Proxy({}, hookProxyHandler);
+global.ROOT_PATH = fs.realpathSync(rootPath);
+global.jsfairPath = fs.realpathSync(__dirname);
+
 //dev mode
 if (process.argv.indexOf('--dev') > -1) {
     //setup dev websocket server

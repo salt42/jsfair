@@ -53,7 +53,7 @@ stdin.setEncoding( 'utf8' );
 stdin.resume();// resume stdin in the parent process (node app won't quit all by itself unless an error or process.exit() happens)
 
 function draw() {
-    process.stdout.write('\033c');
+    // process.stdout.write('\033c');
     process.stdout.write(Reverse + "  [r = Restart Server] [w = Reload Page]  " + Reset + "\n");
 }
 stdin.on( 'data', function( key ){
