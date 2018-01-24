@@ -22,8 +22,6 @@ let sqlQueryRegistry    = new Map();
 let dbMethods           = {};
 
 
-
-
 function getStatement(name) {
     let query;
 
@@ -62,43 +60,31 @@ function runStatement(name, opt = {}) {
     }
     return result;
 }
-
+// DB.prepare('select * from ' + table).all({})
 function init() {
     log("Init");
     hook.trigger("db_prepare", DB);
-    hook.getTrigger("db_addMethod", function(trigger, args) {
-        if (!args || !args[0]) {
-            log("ERROR: No method name provided");
-            return;
-        }
-        dbMethods[args[0]] = trigger(DB);
-    });
-    hook.getTrigger("db_addObject", function(trigger, args) {
-        if (!args || !args[0]) {
-            log("ERROR: No object name provided");
-            return;
-        }
-        dbMethods[args[0]] = trigger(DB);
-    });
+    // hook.getTrigger("db_addMethod", function(trigger, args) {
+    //     if (!args || !args[0]) {
+    //         log("ERROR: No method name provided");
+    //         return;
+    //     }
+    //     dbMethods[args[0]] = trigger(DB);
+    // });
+    // hook.getTrigger("db_addObject", function(trigger, args) {
+    //     if (!args || !args[0]) {
+    //         log("ERROR: No object name provided");
+    //         return;
+    //     }
+    //     dbMethods[args[0]] = trigger(DB);
+    // });
 }
 
-module.exports = new Proxy({}, {
-    get: function(target, name) {
-        if (name === "init") return init;
-        if (name === "runStatement") return runStatement;
-        if (dbMethods.hasOwnProperty(name) && typeof dbMethods[name] === "object") {
-            return dbMethods[name];
-        }
-        return function(...args) {
-            if (dbMethods.hasOwnProperty(name) && typeof dbMethods[name] === "function") {
-                return dbMethods[name].call(dbMethods, ...args);
-            } else {
-                let e = new Error(("No function registered with name: " + name).red);
-                log(e.stack);
-            }
-        }
-    }
-});
+module.exports = {
+    init: init,
+    runStatement: runStatement,
+    getStatement: getStatement,
+};
 
 function exitHandler(options, err) {
     DB.close();
