@@ -10,7 +10,7 @@ var conf = {};
 var defaults = {
     appName: "jsFair",
     server: {
-        modulePaths: ["/server/routes"],
+        modulePaths: ["/server/routes", "/jsfair/server/modules"],
         http: {
             port: 666,
             staticDirs: ["/client"],
@@ -27,6 +27,10 @@ var defaults = {
         defaultComponent: ["sections"],
         modulePaths: ["/server/routes"],
         componentPaths: ["/client/component"],
+        preCss: [],
+        postCss: [],
+        preScript: [],
+        postScript: []
     },
 };
 
