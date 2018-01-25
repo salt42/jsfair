@@ -15,8 +15,7 @@
   },
   "author": "",
   "dependencies": {
-    "better-sqlite3": "^4.0.3",
-    "color": "^2.0.1",
+    "better-sqlite3": "^4.1.0",
     "colors": "^1.1.2",
     "cookie-parser": "^1.4.3",
     "express": "^4.16.2",
