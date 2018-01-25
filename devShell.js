@@ -63,7 +63,7 @@ function draw() {
 stdin.on( 'data', function( key ){
     // ctrl-c ( end of text )
     if ( key === '\u0003' ) {
-        process.stdout.write(Underscore + FgRed + "-> STOPPING SERVER..." + Reset + "\n");
+        process.stdout.write(FgCyan + "-> STOPPING SERVER..." + Reset + "\n");
         process.exit();
     }
     if (true) {
@@ -71,7 +71,7 @@ stdin.on( 'data', function( key ){
             case "q":
                 process.stdout.write(FgCyan + "-> REFRESHING CLIENTS" + Reset + "\n");
                 devInstance.send({com: "refreshClients"});
-                process.stdout.write(Underscore + FgRed + "-> STOPPING SERVER..." + Reset + "\n");
+                process.stdout.write(FgCyan + "-> STOPPING SERVER..." + Reset + "\n");
                 process.exit();
                 return;
             case "w":
