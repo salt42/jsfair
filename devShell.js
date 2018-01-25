@@ -71,7 +71,7 @@ stdin.on( 'data', function( key ){
                 instantiateDevServer();
                 return;
             case "w":
-                process.stdout.write("REFRESHING CLIENTS (not yet implemented)\n");
+                process.stdout.write("REFRESHING CLIENTS\n");
                 devInstance.send({com: "refreshClients"});
                 return;
         }
@@ -82,10 +82,16 @@ stdin.on( 'data', function( key ){
 
 function instantiateDevServer() {
     devInstance = fork(scriptPath, ["--dev", "--root", rootPath], { stdio: 'inherit' });
-    // devInstance = fork(scriptPath, ["--dev", "--root", rootPath], { stdio: 'pipe' });
+    // devInstance = fork(scriptPath, ["--dev", "--root", rootPath], { stdio: ['pipe', 'pipe', 'pipe', 'ipc']  });
     // console.log(devInstance);
     // devInstance.stdout.on("data", function(e) {
-    //     console.log("child said:", e.toString());
+    //     process.stderr.write(e);
+    // });
+    // devInstance.stderr.on("data", function(e) {
+    //     process.stderr.write(e);
+    // });
+    // devInstance.on('close', function(code, signal) {
+    //     // console.log('test.exe closed',code, signal);
     // });
 }
 function killDevServer() {

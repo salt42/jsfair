@@ -4,11 +4,14 @@ module.paths.push(__dirname + "/server");
 process.env.NODE_PATH = __dirname + "/server";
 require('module').Module._initPaths();
 
+process.on('uncaughtException', function (err) {
+    console.log(err);
+});
+const DEV_MODE= (process.argv.indexOf('--dev') > -1)? true: false;
 const colors  = require('colors');
 const fs      = require("fs");
 const log     = require('jsfair/log')('main');
 const hook    = require('./server/hook');
-
 let rootPath = "";
 let hookProxyHandler = {
     get: function(target, name) {
@@ -30,7 +33,6 @@ function helpPage(err) {
     console.log("Error: %s".red, err);
     console.log("Usage: node main.js --root ../pathToProjectFolder [arguments]");
 }
-
 if (process.argv.indexOf('--root') > -1) {
     rootPath = process.argv[process.argv.indexOf('--root') + 1];
     if (rootPath === "") {
@@ -43,20 +45,20 @@ if (process.argv.indexOf('--root') > -1) {
 }
 
 const conf = require('jsfair/config')(rootPath + "/conf.json");
+const browser = require("./server/browserBridge");
 //dev mode
-if (process.argv.indexOf('--dev') > -1) {
-    //setup dev websocket server
-
-    //add devBridge.js to preScripts config
-    // conf
+if (DEV_MODE) {
+    log("load browser bridge");
+    //stdin
     process.on('message', message => {
-        console.log('message from parent:', message);
         if (!message.hasOwnProperty("com")) return;
         switch(message.com) {
             case "refreshClients":
-                //@todo rebuild -> send reload command to client
-                //@todo damit des funtz muss noch ein devClientBridge basteln die eine socket verbindung mit einem extra ws server aufbaut
-                //@todo -> und dann können wir dadrüber des reload command senden und die seite automatisch reloaden
+                try {
+                    browser.reload();
+                } catch (e) {
+                    console.log(e);
+                }
 
                 break;
         }
@@ -93,6 +95,8 @@ try {
     }
     db.init();
     express.init();
+    browser.init();
+
 } catch (e) {
     console.log(e);
 }

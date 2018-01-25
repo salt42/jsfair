@@ -57,7 +57,21 @@ let isPortTaken = function(port, fn) {
         })
         .listen(port)
 };
-
+function logErrors(err, req, res, next) {
+    console.error(err.stack);
+    next(err);
+}
+function clientErrorHandler(err, req, res, next) {
+    if (req.xhr) {
+        res.status(500).send({ error: 'Something failed!' });
+    } else {
+        next(err);
+    }
+}
+function errorHandler(err, req, res, next) {
+    res.status(500);
+    res.render('error', { error: err });
+}
 module.exports = {};
 module.exports.init = function () {
     hook.trigger("http_init", app);
@@ -75,15 +89,9 @@ module.exports.init = function () {
     //@todo trigger route setup hook
     // ***************************************************
 
-    // Handle 404
-    app.use(function(req, res) {
-        res.status(404).send('404: Page not Found');
-    });
-
-    // Handle 500
-    app.use(function(error, req, res, next) {
-        res.status(500).send('500: Internal Server Error');
-    });
+    app.use(logErrors);
+    app.use(clientErrorHandler);
+    app.use(errorHandler);
 
     isPortTaken(PORT, function(err, taken) {
         if (err) {
