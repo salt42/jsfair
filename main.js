@@ -46,6 +46,7 @@ if (process.argv.indexOf('--root') > -1) {
 
 const conf = require('jsfair/config')(rootPath + "/conf.json");
 const browser = require("./server/browserBridge");
+let autoHeader = require("./server/autoHeader");
 //dev mode
 if (DEV_MODE) {
     log("load browser bridge");

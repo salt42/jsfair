@@ -87,7 +87,7 @@ module.exports = {
     getStatement: getStatement,
     //aber die DB.prepare müssenw ir einbauen
     select(statement, option = {}) {
-        console.log("jsfair ", option);
+        console.log("jsfair/database.js: ", option);
         return DB.prepare(statement).all(option);
     }
 };

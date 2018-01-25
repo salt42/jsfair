@@ -9,6 +9,9 @@ var confPath = "";
 var conf = {};
 var defaults = {
     appName: "jsFair",
+    jsFair: {
+        path: "/jsfair",
+    },
     server: {
         modulePaths: ["/server/routes", "/jsfair/server/modules"],
         http: {
