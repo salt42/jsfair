@@ -70,7 +70,7 @@ try {
     let express = require("./server/express");
     log("Start %s Server", conf.appName);
     try {
-        //@todo if conf.client.defaultComponent.length > 0 then load this modules
+        //@todo if conf.client.defaultComponent.length > 0 then load this modules to
         for (let x = 0; x < conf.server.modulePaths.length; x++) {
             let loadPath = fs.realpathSync(rootPath + "/" + conf.server.modulePaths[x]);
             let dir = fs.readdirSync(loadPath);
