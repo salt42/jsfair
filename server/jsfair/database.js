@@ -43,12 +43,13 @@ function getStatement(name) {
         return sqlQueryRegistry.get(name);
     }
 }
-function runStatement(name, opt = {}) {
+function runStatement(name, opt = {}, select = null) {
     let statements = getStatement(name);
     let parts = statements.split("--#");
     let result = [];
     for(let i = 0; i < parts.length; i++) {
         if (!parts[i]) continue;
+        if (select && select.indexOf(i) > 0) continue;
 
         let func = parts[i].slice(0, parts[i].indexOf("\r\n")),
             statement = parts[i].slice(parts[i].indexOf("\r\n") + 2)
