@@ -60,7 +60,6 @@ function runStatement(name, opt = {}) {
     }
     return result;
 }
-// DB.prepare('select * from ' + table).all({})
 function init() {
     log("Init");
     hook.trigger("db_prepare", DB);
@@ -84,6 +83,10 @@ module.exports = {
     init: init,
     runStatement: runStatement,
     getStatement: getStatement,
+    //aber die DB.prepare müssenw ir einbauen
+    select(statement, option = {}) {
+        return DB.prepare(statement).all(option);//der giebt immer alle zurück
+    }
 };
 
 function exitHandler(options, err) {
