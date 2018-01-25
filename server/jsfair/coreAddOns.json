@@ -1,0 +1,20 @@
+{
+    "client": {
+        "components": {
+            // "addOnName": "/path/relative/to/main.js-file,
+            "datGui": "/client/component/datGui.js",
+            "devContent": "/client/component/devContent.js",
+            "section": "/client/component/section.js",
+            "test": "/client/component/test.js"
+        },
+        "modules": {
+            "appState": {
+                "js": "/client/modules/appState.js",
+                "css": ""
+            }
+        }
+    },
+    "server": {
+        "modules": {}
+    }
+}

@@ -9,9 +9,6 @@ var confPath = "";
 var conf = {};
 var defaults = {
     appName: "jsFair",
-    jsFair: {
-        path: "/jsfair",
-    },
     server: {
         modulePaths: ["/server/routes", "/jsfair/server/modules"],
         http: {
@@ -26,8 +23,15 @@ var defaults = {
         }
     },
     client: {
-        defaultModules: [],
-        defaultComponent: ["sections"],
+        coreModules: {
+            appState: true,
+        },
+        coreComponent: {
+            datGui:     true,
+            devContent: true,
+            section:    true,
+            test:       true,
+        },
         modulePaths: ["/server/routes"],
         componentPaths: ["/client/component"],
         preCss: [],

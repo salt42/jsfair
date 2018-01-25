@@ -1,4 +1,5 @@
 "use strict";
+var core    = require ('jsfair/coreAddOns').client;
 var config  = require('jsfair/config');
 var log     = require('jsfair/log')("autoHeader");
 let fs      = require("fs");
@@ -9,16 +10,36 @@ hookIn.http_init(function(app) {
     let Modules = [];
     let Components = [];
 
-    let preCss = '<!-- stylesheets -->' + tagEnd;
-    let postCss = "";
+    let coreCss = '<!-- stylesheets -->' + tagEnd;
+    let preCss = "";
     let componentCss = "";
+    let postCss = "";
+
+    let coreScript = '<!-- scripts -->' + tagEnd;
+    let preScript = "";
     let componentAndModuleScript = "";
-    let preScript = '<!-- scripts -->' + tagEnd;
     let postScript = "";
 
     /* region create header tags pre section */
-    preScript += '<script src="/jsfair/libsmin.js"></script>' + tagEnd;
-    preScript += '<script src="/jsfair/jsfair.js"></script>' + tagEnd;
+    coreScript += '<script src="/jsfair/libsmin.js"></script>' + tagEnd;
+    coreScript += '<script src="/jsfair/jsfair.js"></script>' + tagEnd;
+
+    for (let coreComponent in config.client.coreComponent){
+        if (config.client.coreComponent.hasOwnProperty(coreComponent) && coreComponent === true){
+            let corePath = Path.join(jsfairPath, core.components[coreComponent]);
+            coreScript += createScriptTag(corePath);
+        }
+    }
+    for (let coreModules in config.client.coreModules){
+        if (config.client.coreModules.hasOwnProperty(coreModules) && coreModules === true){
+            let coreModule = core.components[coreModules];
+            let corePath = Path.join(jsfairPath, coreModule.js);
+            coreScript += createScriptTag(corePath);
+            corePath = (coreModule.css === "") ? null : Path.join(jsfairPath, coreModule.css);
+            coreScript += (corePath === null) ? "" : createCssTag(corePath);
+        }
+    }
+
     if (config.client.preCss.length !== 0){
         for(let i = 0; i < config.client.preCss.length; i++){
             preCss += createCssTag(config.client.preCss[i]);
@@ -82,8 +103,8 @@ hookIn.http_init(function(app) {
     }
     /*endregion*/
 
-    global.headerIncludes += preCss    + componentCss             + postCss    + tagEnd;
-    global.headerIncludes += preScript + componentAndModuleScript + postScript;
+    global.headerIncludes += coreCss    + preCss    + componentCss             + postCss    + tagEnd;
+    global.headerIncludes += coreScript + preScript + componentAndModuleScript + postScript;
 });
 
 /* region http_init() auxiliaries */
