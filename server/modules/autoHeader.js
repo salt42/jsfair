@@ -19,7 +19,6 @@ hookIn.http_init(function(app) {
     /* region create header tags pre section */
     preScript += '<script src="/jsfair/libsmin.js"></script>' + tagEnd;
     preScript += '<script src="/jsfair/jsfair.js"></script>' + tagEnd;
-
     if (config.client.preCss.length !== 0){
         for(let i = 0; i < config.client.preCss.length; i++){
             preCss += createCssTag(config.client.preCss[i]);
@@ -51,6 +50,7 @@ hookIn.http_init(function(app) {
     if (config.client.componentPaths.length !== 0) {
         for (let i = 0; i < config.client.componentPaths.length; i++) {
             let comp = searchComponents(config.client.componentPaths[i]);
+            if (!comp) continue;
             Components = Components.concat(comp);
         }
     }

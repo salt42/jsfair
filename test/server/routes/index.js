@@ -5,6 +5,11 @@
 hookIn.http_createRoute("/", function(router) {
     /* GET home page. */
     router.get('/', function(req, res) {
-        res.render('index', {});
+        try {
+            res.render('index', {});
+        }catch (e) {
+            console.log(e);
+        }
+        // res.send();
     });
 });

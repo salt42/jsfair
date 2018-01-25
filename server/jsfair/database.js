@@ -22,6 +22,8 @@ let sqlQueryRegistry    = new Map();
 let dbMethods           = {};
 
 
+
+
 function getStatement(name) {
     let query;
 
