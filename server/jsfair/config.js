@@ -3,17 +3,19 @@
  */
 "use strict";
 
-var fs = require("fs");
-var beautify = require('js-beautify').js_beautify;
-var confPath = "";
-var conf = {};
-var defaults = {
+const fs = require("fs");
+const beautify = require('js-beautify').js_beautify;
+const merge = require('deepmerge');
+
+let confPath = "";
+let conf = {};
+let defaults = {
     appName: "jsFair",
     server: {
-        modulePaths: ["/server/routes", "/jsfair/server/modules"],
+        modulePaths: [],
         http: {
             port: 666,
-            staticDirs: ["/client"],
+            staticDirs: [],
             viewsDir: "/views",
         },
         database: {
@@ -23,24 +25,26 @@ var defaults = {
         }
     },
     client: {
-        coreModules: {
-            appState: true,
-        },
-        coreComponent: {
-            datGui:     true,
-            devContent: true,
-            section:    true,
-            test:       true,
-        },
-        modulePaths: ["/server/routes"],
-        componentPaths: ["/client/component"],
+        defaultModules: [],
+        defaultComponents: [],
+        modulePaths: [],
+        componentPaths: [],
         preCss: [],
         postCss: [],
         preScript: [],
         postScript: []
     },
+    registerConfig(newConf) {
+        defaults = merge(defaults, newConf);
+        conf = merge(conf, newConf);
+        save();
+    }
 };
 
+/*
+
+    defaults.registerConfig({client:{test:42} });
+* */
 module.exports = function(path) {
     load(path);
     module.exports = conf;
@@ -56,8 +60,7 @@ function load(path) {
     checkConfFile();
     let content = fs.readFileSync(path);
     content = JSON.parse(content);
-    conf = {};
-    Object.assign(conf, defaults, content);
+    conf = merge(defaults, content);
 }
 function save() {
     checkConfFile();
@@ -67,7 +70,21 @@ function save() {
         })
     );
 }
-
+function merge2(target, conf) {
+    let prop;
+    for (prop in conf) {
+        if (prop in target && Array.isArray( target[ prop ] ) ) {
+            // Concat Arrays
+            target[ prop ] = target[ prop ].concat( conf[ prop ] );
+        } else if (prop in target && typeof target[ prop ] === "object" ) {
+            // Merge Objects
+            target[ prop ] = merge2(target[prop], conf[prop]);
+        } else {
+            // Set new values
+            target[ prop ] = conf[ prop ];
+        }
+    }
+}
 function exitHandler(options, err) {
     process.exit();
 }
