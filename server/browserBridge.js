@@ -1,11 +1,11 @@
 const config = require("jsfair/config");
 const WebSocket = require('ws');
 let wss;
+
+//add devBridge.js to preScripts config
 config.client.preScript.push("/jsfair/browserBridge.js");
 function create() {
-//add devBridge.js to preScripts config
-
-//setup dev websocket server
+    //setup dev websocket server
     wss = new WebSocket.Server({port: 4222});
     wss.on('connection', function connection(ws) {
         ws.on('open', function incoming(message) {

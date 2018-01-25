@@ -52,27 +52,49 @@ stdin.setRawMode( true );// without this, we would only get streams once enter i
 stdin.setEncoding( 'utf8' );
 stdin.resume();// resume stdin in the parent process (node app won't quit all by itself unless an error or process.exit() happens)
 
+let liveReload = false;
+let headerStyle = Underscore +  FgCyan + BgBlack;
 function draw() {
+    let liveColor = (!liveReload)? BgRed: BgGreen;
     process.stdout.write('\033c');
-    process.stdout.write(Reverse + "  [r = Restart Server] [w = Reload Page]  " + Reset + "\n");
+    process.stdout.write(headerStyle + "# JsFair Dev Server\ " +
+        "                         [q = quit] [w = Restart Server] [e = Reload Page] [r = liveReload" + liveColor +" " + headerStyle + "]  " + Reset + "\n");
 }
 stdin.on( 'data', function( key ){
     // ctrl-c ( end of text )
     if ( key === '\u0003' ) {
-        process.stdout.write("STOPPING SERVER...\n");
+        process.stdout.write(Underscore + FgRed + "-> STOPPING SERVER..." + Reset + "\n");
         process.exit();
     }
     if (true) {
         switch(key) {
-            case "r":
+            case "q":
+                process.stdout.write(FgCyan + "-> REFRESHING CLIENTS" + Reset + "\n");
+                devInstance.send({com: "refreshClients"});
+                process.stdout.write(Underscore + FgRed + "-> STOPPING SERVER..." + Reset + "\n");
+                process.exit();
+                return;
+            case "w":
                 draw();
-                process.stdout.write("RESTARTING SERVER...\n");
+                process.stdout.write(FgCyan + "-> RESTARTING SERVER..." + Reset + "\n");
                 if (devInstance) killDevServer();
                 instantiateDevServer();
                 return;
-            case "w":
-                process.stdout.write("REFRESHING CLIENTS\n");
+            case "e":
+                process.stdout.write(FgCyan + "-> RELOAD PAGE" + Reset + "\n");
                 devInstance.send({com: "refreshClients"});
+                return;
+            case "r":
+                //toggle live reload
+                liveReload = !liveReload;
+                draw();
+                let color = FgGreen;
+                let text = "ACTIVATED";
+                if (!liveReload) {
+                    text = "DEACTIVATED";
+                    color = FgRed;
+                }
+                process.stdout.write(FgCyan + "-> LIVE RELOAD " + color +((liveReload)?"ACTIVATED":"DEACTIVATED") + FgRed + "        (NOT IMPLEMENTED YET)" + Reset + "\n");
                 return;
         }
     }
