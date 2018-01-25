@@ -52,27 +52,49 @@ stdin.setRawMode( true );// without this, we would only get streams once enter i
 stdin.setEncoding( 'utf8' );
 stdin.resume();// resume stdin in the parent process (node app won't quit all by itself unless an error or process.exit() happens)
 
+let liveReload = false;
+let headerStyle = Underscore +  FgCyan + BgBlack;
 function draw() {
-    // process.stdout.write('\033c');
-    process.stdout.write(Reverse + "  [r = Restart Server] [w = Reload Page]  " + Reset + "\n");
+    let liveColor = (!liveReload)? BgRed: BgGreen;
+    process.stdout.write('\033c');
+    process.stdout.write(headerStyle + "# JsFair Dev Server\ " +
+        "                         [q = quit] [w = Restart Server] [e = Reload Page] [r = liveReload" + liveColor +" " + headerStyle + "]  " + Reset + "\n");
 }
 stdin.on( 'data', function( key ){
     // ctrl-c ( end of text )
     if ( key === '\u0003' ) {
-        process.stdout.write("STOPPING SERVER...\n");
+        process.stdout.write(FgCyan + "-> STOPPING SERVER..." + Reset + "\n");
         process.exit();
     }
     if (true) {
         switch(key) {
-            case "r":
+            case "q":
+                process.stdout.write(FgCyan + "-> REFRESHING CLIENTS" + Reset + "\n");
+                devInstance.send({com: "refreshClients"});
+                process.stdout.write(FgCyan + "-> STOPPING SERVER..." + Reset + "\n");
+                process.exit();
+                return;
+            case "w":
                 draw();
-                process.stdout.write("RESTARTING SERVER...\n");
+                process.stdout.write(FgCyan + "-> RESTARTING SERVER..." + Reset + "\n");
                 if (devInstance) killDevServer();
                 instantiateDevServer();
                 return;
-            case "w":
-                process.stdout.write("REFRESHING CLIENTS (not yet implemented)\n");
+            case "e":
+                process.stdout.write(FgCyan + "-> RELOAD PAGE" + Reset + "\n");
                 devInstance.send({com: "refreshClients"});
+                return;
+            case "r":
+                //toggle live reload
+                liveReload = !liveReload;
+                draw();
+                let color = FgGreen;
+                let text = "ACTIVATED";
+                if (!liveReload) {
+                    text = "DEACTIVATED";
+                    color = FgRed;
+                }
+                process.stdout.write(FgCyan + "-> LIVE RELOAD " + color +((liveReload)?"ACTIVATED":"DEACTIVATED") + FgRed + "        (NOT IMPLEMENTED YET)" + Reset + "\n");
                 return;
         }
     }
@@ -82,10 +104,16 @@ stdin.on( 'data', function( key ){
 
 function instantiateDevServer() {
     devInstance = fork(scriptPath, ["--dev", "--root", rootPath], { stdio: 'inherit' });
-    // devInstance = fork(scriptPath, ["--dev", "--root", rootPath], { stdio: 'pipe' });
+    // devInstance = fork(scriptPath, ["--dev", "--root", rootPath], { stdio: ['pipe', 'pipe', 'pipe', 'ipc']  });
     // console.log(devInstance);
     // devInstance.stdout.on("data", function(e) {
-    //     console.log("child said:", e.toString());
+    //     process.stderr.write(e);
+    // });
+    // devInstance.stderr.on("data", function(e) {
+    //     process.stderr.write(e);
+    // });
+    // devInstance.on('close', function(code, signal) {
+    //     // console.log('test.exe closed',code, signal);
     // });
 }
 function killDevServer() {
