@@ -47,10 +47,6 @@ let defaults = {
     }
 };
 
-/*
-
-    defaults.registerConfig({client:{test:42} });
-* */
 module.exports = function(path) {
     load(path);
     module.exports = conf;
@@ -76,21 +72,7 @@ function save() {
         })
     );
 }
-function merge2(target, conf) {
-    let prop;
-    for (prop in conf) {
-        if (prop in target && Array.isArray( target[ prop ] ) ) {
-            // Concat Arrays
-            target[ prop ] = target[ prop ].concat( conf[ prop ] );
-        } else if (prop in target && typeof target[ prop ] === "object" ) {
-            // Merge Objects
-            target[ prop ] = merge2(target[prop], conf[prop]);
-        } else {
-            // Set new values
-            target[ prop ] = conf[ prop ];
-        }
-    }
-}
+
 function exitHandler(options, err) {
     process.exit();
 }
