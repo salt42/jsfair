@@ -11,7 +11,6 @@ config.registerConfig({
         deinValue: "default value"
     }
 });
-//nein war ein spaß ...
 hookIn.http_init(function(app) {
     let Modules = [];
     let Components = [];

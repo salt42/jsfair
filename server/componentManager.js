@@ -11,252 +11,121 @@ config.registerConfig({
         deinValue: "default value"
     }
 });
+hookIn.systemReady(() => {
+    log("Search Components");
+    //init module
+    return run();
+});
 
-let component = {
-    name: "",
-    scriptPath: "",
-    cssPath:    "",
-};
-let module = {
-    name: "",
-    scriptPath: ""
-};
-
-let _components = {
-    components: {
-        core: [],
-        pre: [],
-        post: []
-    },
-    modules: {
-        core: [],
-        pre: [],
-        post: []
-    },
-};
-
-let _componentsHash; //dann eher
-
-let Components = {};
-let Modules = {};
+function  run() {
+let Modules = [];
+let Components = [];
 
 let coreCss = '<!-- stylesheets -->' + tagEnd;
 let preCss = "";
-let commonCss = "";
+let componentCss = "";
 let postCss = "";
 
 let coreScript = '<!-- scripts -->' + tagEnd;
 let preScript = "";
-let commonScript = "";
+let componentAndModuleScript = "";
 let postScript = "";
 
-hookIn.systemReady(() => {
-    log("Search Components");
-    //init module
-    //search all comps an push in lists
-});
-
-module.exports = {};
-//da bau ich halt immer ganz gerne objects mit funcs die dem wortlaut entsprechen...
-// ich will ne liste, von tieren mit dem namen XX => list.animal.byName(XX);  ja hier köönnen wir es uns leicht machen wei wir eigentlich immer ein array von einem typen haben wollen
-//in der main.js brauch ich [path] :) von activen (in der config) server modulen
-module.exports.testApiFunc = () => {
-    //datten aus den listen wieder zurückgeben ah ok also
-};
-
-function get compPaths(){
-
-    /* region jquery */
-    let a = config.client.jquery;
-    if (a.length > 1) {
-        if (!Components.core) Components.core = [];
-        for (let i = 0; i < a.length; i++) {
-
-            Components.core.push({
-                name: "jquery part " + (i + 1),
-                scriptPath: a[i],
-                cssPath: null
-            });
-        }
+/* region create header tags pre section */
+let a = config.client.jquery;
+if (a.length > 0){
+    for(let i = 0; i < a.length; i++){
+        preCss += createCssTag(a[i]);
     }
-    /*endregion*/
-    /* region core comps */
-    a = config.client.coreComponents;
-    if (a.length > 1) {
-        if (!Components.core) Components.core = [];
-        for (let coreName in a) {
-            if (a.hasOwnProperty(coreName) && a[coreName] === true) {
-                a = core.client.components[coreName];
-                if (a) Components.core.push({
-                    name: coreName,
-                    scriptPath: a.js,
-                    cssPath: a.css
-                });
-            }
-        }
-    }
-    /*endregion*/
-    /* region pre comps */
-    /*endregion*/
-    /* region common comps */
-    a = config.client.componentPaths;
-    if (a.length > 1) {
-        if (!Components.common) Components.common = [];
-        if (a.length !== 0) {
-            for (let i = 0; i < a.length; i++) {
-                let comp = searchComponents(a[i]);
-                if (!comp) continue;
-                Components.common = Components.common.concat(comp);
-            }
-        }
-    }
-    /*endregion*/
-    /* region post comps */
-    /*endregion*/
 }
 
-function get modulePaths(){
-    /* region core modules */
-    let a = config.client.coreModules;
-    if (a.length > 1) {
-        if (!Modules.core) Modules.core = [];
-        for (let coreName in a) {
-            if (a.hasOwnProperty(coreName) && a[coreName] === true) {
-                if (core.client.modules[coreName]) Modules.core.push({
-                    name: coreName,
-                    scriptPath: core.client.modules[coreName]
-                });
-            }
-        }
+a = config.client.coreModules;
+for (let coreModule in a){
+    if (a.hasOwnProperty(coreModule) && a[coreModule] === true){
+        let corePath = Path.join(jsfairPath, core.modules[coreModule]);
+        coreScript += createScriptTag(corePath);
     }
-    /*endregion*/
-    /* region pre modules */
-    a = [];
-    if (a.length > 1) {
-        if (!Modules.pre) Modules.pre = [];
-    }
-    /*endregion*/
-    /* region common modules */
-    a = config.client.modulePaths;
-    if (a.length > 1) {
-        if (!Modules.common) Modules.common = [];
-        for (let i = 0; i < config.client.modulePaths.length; i++) {
-            let moduleResult = searchModules(config.client.modulePaths[i]);
-            Modules.pre = Modules.concat(moduleResult.modules);
-            Components.pre = Components.concat(moduleResult.components);
-        }
-    }
-    /*endregion*/
-    /* region post modules */
-    a = [];
-    if (a.length > 1) {
-        if (!Modules.post) Modules.post = [];
-    }
-    /*endregion*/
-
 }
-hookIn.http_init(function(app) {
-    // let Modules = [];
-    // let Components = [];
-    //
-    // let coreCss = '<!-- stylesheets -->' + tagEnd;
-    // let preCss = "";
-    // let componentCss = "";
-    // let postCss = "";
-    //
-    // let coreScript = '<!-- scripts -->' + tagEnd;
-    // let preScript = "";
-    // let componentAndModuleScript = "";
-    // let postScript = "";
+a = config.client.coreComponents;
+for (let coreComponents in a){
+    if (a.hasOwnProperty(coreComponents) && a[coreComponents] === true){
+        let coreComponent = core.components[coreComponents];
+        let corePath = Path.join(jsfairPath, coreComponent.js);
+        coreScript += createScriptTag(corePath);
+        corePath = (coreComponent.css === "") ? null : Path.join(jsfairPath, coreComponent.css);
+        coreScript += (corePath === null) ? "" : createCssTag(corePath);
+    }
+}
 
-    /* region create header tags pre section */
-    coreScript += '<script src="/jsfair/libsmin.js"></script>' + tagEnd;
-    coreScript += '<script src="/jsfair/jsfair.js"></script>' + tagEnd;
+if (config.client.preCss.length > 0){
+    for(let i = 0; i < config.client.preCss.length; i++){
+        preCss += createCssTag(config.client.preCss[i]);
+    }
+}
+if (config.client.preScript.length > 0){
+    for(let i = 0; i < config.client.preScript.length; i++){
+        preScript += createScriptTag(config.client.preScript[i]);
+    }
+}
+/*endregion*/
 
-    for (let coreModule in config.client.coreModules){
-        if (config.client.coreModules.hasOwnProperty(coreModule) && coreModule === true){
-            let corePath = Path.join(jsfairPath, core.modules[coreModule]);
-            coreScript += createScriptTag(corePath);
-        }
+/* region create header tags post section */
+if (config.client.postCss.length !== 0){
+    postCss = '<!-- post -->' + tagEnd;
+    for(let i = 0; i < config.client.postCss.length; i++){
+        postCss += createCssTag(config.client.preCss[i]);
     }
-    for (let coreComponents in config.client.coreComponent){
-        if (config.client.coreComponent.hasOwnProperty(coreComponents) && coreComponents === true){
-            let coreComponent = core.components[coreComponents];
-            let corePath = Path.join(jsfairPath, coreComponent.js);
-            coreScript += createScriptTag(corePath);
-            corePath = (coreComponent.css === "") ? null : Path.join(jsfairPath, coreComponent.css);
-            coreScript += (corePath === null) ? "" : createCssTag(corePath);
-        }
+}
+if (config.client.postScript.length !== 0){
+    postScript = '<!-- post -->' + tagEnd;
+    for(let i = 0; i < config.client.postScript.length; i++){
+        postScript += createScriptTag(config.client.preScript[i]);
     }
+}
+/*endregion*/
 
-    if (config.client.preCss.length !== 0){
-        for(let i = 0; i < config.client.preCss.length; i++){
-            preCss += createCssTag(config.client.preCss[i]);
-        }
+/* region gather data of components and modules */
+if (config.client.componentPaths.length !== 0) {
+    for (let i = 0; i < config.client.componentPaths.length; i++) {
+        let comp = searchComponents(config.client.componentPaths[i]);
+        if (!comp) continue;
+        Components = Components.concat(comp);
     }
-    if (config.client.preScript.length !== 0){
-        for(let i = 0; i < config.client.preScript.length; i++){
-            preScript += createScriptTag(config.client.preScript[i]);
-        }
+}
+if (config.client.modulePaths.length !== 0) {
+    for (let i = 0; i < config.client.modulePaths.length; i++) {
+        let moduleResult = searchModules(config.client.modulePaths[i]);
+        if (moduleResult === null) continue;
+        Modules = Modules.concat(moduleResult.modules);
+        Components = Components.concat(moduleResult.components);
     }
-    /*endregion*/
+}
+/*endregion*/
 
-    /* region create header tags post section */
-    if (config.client.postCss.length !== 0){
-        postCss = '<!-- post -->' + tagEnd;
-        for(let i = 0; i < config.client.postCss.length; i++){
-            postCss += createCssTag(config.client.preCss[i]);
-        }
+/* region create header tags of components and modules */
+// components
+if (Components.length !== 0) {
+    componentCss += '<!-- components -->' + tagEnd;
+    componentAndModuleScript += '<!-- components -->' + tagEnd;
+    for (let i = 0; i < Components.length; i++) {
+        componentCss += createCssTag(Components[i].cssPath);
+        componentAndModuleScript += createScriptTag(Components[i].scriptPath);
     }
-    if (config.client.postScript.length !== 0){
-        postScript = '<!-- post -->' + tagEnd;
-        for(let i = 0; i < config.client.postScript.length; i++){
-            postScript += createScriptTag(config.client.preScript[i]);
-        }
+}
+// modules
+if (Modules.length !== 0) {
+    componentAndModuleScript += '<!-- modules -->' + tagEnd;
+    for (let i = 0; i < Modules.length; i++) {
+        componentAndModuleScript += createScriptTag(Modules[i].scriptPath);
     }
-    /*endregion*/
+}
+/*endregion*/
 
-    /* region gather data of components and modules */
-    if (config.client.componentPaths.length !== 0) {
-        for (let i = 0; i < config.client.componentPaths.length; i++) {
-            let comp = searchComponents(config.client.componentPaths[i]);
-            if (!comp) continue;
-            Components = Components.concat(comp);
-        }
-    }
-    if (config.client.modulePaths.length !== 0) {
-        for (let i = 0; i < config.client.modulePaths.length; i++) {
-            let moduleResult = searchModules(config.client.modulePaths[i]);
-            Modules = Modules.concat(moduleResult.modules);
-            Components = Components.concat(moduleResult.components);
-        }
-    }
-    /*endregion*/
+return coreCss    + preCss    + componentCss             + postCss    + tagEnd +
+       coreScript + preScript + componentAndModuleScript + postScript;
+}
 
-    /* region create header tags of components and modules */
-    // components
-    if (Components.length !== 0) {
-        componentCss += '<!-- components -->' + tagEnd;
-        componentAndModuleScript += '<!-- components -->' + tagEnd;
-        for (let i = 0; i < Components.length; i++) {
-            componentCss += createCssTag(Components[i].cssPath);
-            componentAndModuleScript += createScriptTag(Components[i].scriptPath);
-        }
-    }
-    // modules
-    if (Modules.length !== 0) {
-        componentAndModuleScript += '<!-- modules -->' + tagEnd;
-        for (let i = 0; i < Modules.length; i++) {
-            componentAndModuleScript += createScriptTag(Modules[i].scriptPath);
-        }
-    }
-    /*endregion*/
-
-    global.headerIncludes += coreCss    + preCss    + componentCss             + postCss    + tagEnd;
-    global.headerIncludes += coreScript + preScript + componentAndModuleScript + postScript;
-});
-
-/* region http_init() auxiliaries */
+/* region auxiliaries */
 function createScriptTag(path) {
     let incPath = createIncPath(path);
     return '<script src="' + incPath + '"></script>'+ tagEnd;
@@ -362,7 +231,7 @@ function readModuleDirectory(name, path) {
 }
 function searchModules(relPath) {
     let path = ROOT_PATH + relPath;
-    if (!fs.existsSync(path))return;
+    if (!fs.existsSync(path))return null;
     let dir = fs.readdirSync(path);// array of filenames
     let modules = {
         modules: [],

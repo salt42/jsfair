@@ -2,20 +2,25 @@
     "client": {
         "components": {
             "datGui": {
-                "js":  "/client/component/datGui.js",
-                "css": "",
+                "name": "datGui",
+                "js": "/client/component/datGui.js",
+                "css": ""
+            },
             "devContent": {
-                "js":  "/client/component/devContent.js",
-                "css": "",
+                "name": "devContent",
+                "js": "/client/component/devContent.js",
+                "css": ""
+            },
             "section": {
-                "js":  "/client/component/section.js",
-                "css": "",
-            "test": {
-                "js":  "/client/component/test.js",
-                "css": "",
+                "name": "section",
+                "js": "/client/component/section.js",
+                "css": ""
+            }
         },
         "modules": {
-            "appState": "/client/modules/appState.js"
+            "appState": {
+                "name": "appState",
+                "js":   "/client/modules/appState.js"
             }
         }
     }
