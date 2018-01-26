@@ -33,8 +33,7 @@ function  run() {
     for (let coreItem in a){
         if (a.hasOwnProperty(coreItem) && a[coreItem] === true){
             items.clientCoreModules.push({
-                type:    "module",
-                section: "core",
+                type:    "client::core::module",
                 name:    coreItem,
                 js:      core.client.components[coreItem].js,
                 css:     null,
@@ -43,8 +42,7 @@ function  run() {
         }
         if (a.hasOwnProperty(coreItem) && a[coreItem] === false){
             inactiveItems.clientCoreModules.push({
-                type:    "module",
-                section: "core",
+                type:    "client::core::module",
                 name:    coreItem,
                 js:      core.client.components[coreItem].js,
                 css:     null,
@@ -57,8 +55,7 @@ function  run() {
         if (a.hasOwnProperty(coreItem) && a[coreItem] === true){
             let cCss = core.client.components[coreItem].css;
             items.clientCoreComponents.push({
-                type:    "module",
-                section: "core",
+                type:    "client::core::component",
                 name:    coreItem,
                 js:      core.client.components[coreItem].js,
                 css:     (cCss === null || cCss ==="") ? null : cCss,
@@ -68,8 +65,7 @@ function  run() {
         if (a.hasOwnProperty(coreItem) && a[coreItem] === false){
             let cCss = core.client.components[coreItem].css;
             inactiveItems.clientCoreComponents.push({
-                type:    "module",
-                section: "core",
+                type:    "client::core::component",
                 name:    coreItem,
                 js:      core.client.components[coreItem].js,
                 css:     (cCss === null || cCss ==="") ? null : cCss,
@@ -81,8 +77,7 @@ function  run() {
     if (a.length > 0){
         for(let i = 0; i < a.length; i++){
             items.clientPreCss.push({
-                type:    "css",
-                section: "pre",
+                type:    "client::pre::css",
                 name:    Path.basename(a[i], ".css"),
                 js:      null,
                 css:     a[i],
@@ -94,8 +89,7 @@ function  run() {
     if (a.length > 0){
         for(let i = 0; i < a.length; i++){
             items.clientPreScript.push({
-                type:    "js",
-                section: "pre",
+                type:    "client::pre::script",
                 name:    Path.basename(a[i], ".js"),
                 js:      a[i],
                 css:     null,
@@ -110,8 +104,7 @@ function  run() {
     if (a.length > 0){
         for(let i = 0; i < a.length; i++){
             items.clientPostCss.push({
-                type:    "css",
-                section: "post",
+                type:    "client::post::css",
                 name:    Path.basename(a[i], ".css"),
                 js:      null,
                 css:     a[i],
@@ -123,8 +116,7 @@ function  run() {
     if (a.length > 0){
         for(let i = 0; i < a.length; i++){
             items.clientPostScript.push({
-                type:    "js",
-                section: "post",
+                type:    "client::post::script",
                 name:    Path.basename(a[i], ".js"),
                 js:      a[i],
                 css:     null,
@@ -180,8 +172,7 @@ function readCompDirectory(name, path) {
     let scriptPath = noExt + ".js";
     if (!fs.existsSync(scriptPath)) throw new Error("Component path " +path+ " doesn't exist");
     items.clientComponents.push({
-        type:    "component",
-        section: "common",
+        type:    "client::common::component",
         name:    name,
         js:      createRelativePath(scriptPath),
         css:     (fs.existsSync(noExt + ".css" )) ? createRelativePath(noExt + ".css")  : null,
@@ -198,8 +189,7 @@ function searchComponents(relPath) {
             readCompDirectory(dir[i], fullPath);
         } else {
             items.clientComponents.push({
-                type:    "component",
-                section: "common",
+                type:    "client::common::component",
                 name:    Path.basename(fullPath, ".js"),
                 js:      createRelativePath(fullPath),
                 css:     null,
@@ -220,8 +210,7 @@ function readModuleDirectory(name, path) {
         if (name + ".js" === dir[i]) {
             // module.js
             items.clientModules.push({
-                type:    "module",
-                section: "common",
+                type:    "client::common::module",
                 name:    name,
                 js:      createRelativePath(scriptPath),
                 css:     null,
@@ -232,8 +221,7 @@ function readModuleDirectory(name, path) {
             if (!fs.statSync(subDir).isDirectory()) {
                 // sub_module.js
                 items.clientModules.push({
-                    type:    "module",
-                    section: "common",
+                    type:    "client::common::module",
                     name:    Path.basename(subDir, ".js"),
                     js:      createRelativePath(subDir),
                     css:     null,
@@ -252,29 +240,20 @@ function searchModules(relPath) {
     let path = createAbsolutePath(relPath);
     if (path === null)throw new Error("Module path " +path+ " doesn't exist");
     let dir = fs.readdirSync(path);// array of filenames
-    let submodule = {
-        modules: [],
-        components: [],
-    };
     for (let i = 0; i < dir.length; i++) {
         if (dir[i] === "exampleWidget") continue; // skip example
         let fullPath = Path.join(path, dir[i]);
         if (!fs.statSync(fullPath).isDirectory() && Path.extname(fullPath) === ".js" ){
             //module name
             items.clientModules.push({
-                type:    "module",
-                section: "common",
+                type:    "client::common::module",
                 name:    Path.basename(fullPath, ".js"),
                 js:      createRelativePath(fullPath),
                 css:     null,
                 html:    null,
             });
         } else {
-            submodule = readModuleDirectory(dir[i], fullPath);
-            if (submodule !== null) {
-                items.clientModules    = items.clientModules.concat(submodule.modules);
-                items.clientComponents = items.clientComponents.concat(submodule.components);
-            }
+            readModuleDirectory(dir[i], fullPath);
         }
     }
 }
@@ -282,10 +261,10 @@ function searchModules(relPath) {
 
 log("Search Components");
 run();
-
 log("Found Components, are they yours?");
-hookIn.systemReady(() => {
-});
+
+// hookIn.systemReady(() => {
+// });
 
 function makeIterator(type, valueType) {
     let array = items[type];
@@ -299,6 +278,7 @@ function makeIterator(type, valueType) {
         }
     }();
 }
+
 module.exports = {
     items: items,
     inactive: inactiveItems,

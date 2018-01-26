@@ -3,24 +3,24 @@
         "components": {
             "datGui": {
                 "name": "datGui",
-                "js": "/component/datGui.js",
+                "js": "/jsfair/component/datGui.js",
                 "css": ""
             },
             "devContent": {
                 "name": "devContent",
-                "js": "/component/devContent.js",
+                "js": "/jsfair/component/devContent.js",
                 "css": ""
             },
             "section": {
-                "name": "section",
-                "js": "/component/section.js",
+                "name": "sections",
+                "js": "/jsfair/component/sections.js",
                 "css": ""
             }
         },
         "modules": {
             "appState": {
                 "name": "appState",
-                "js":   "/modules/appState.js"
+                "js":   "/jsfair/modules/appState.js"
             }
         }
     }
