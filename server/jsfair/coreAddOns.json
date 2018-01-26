@@ -1,15 +1,21 @@
 {
     "client": {
         "components": {
-            "datGui": "/client/component/datGui.js",
-            "devContent": "/client/component/devContent.js",
-            "section": "/client/component/section.js",
-            "test": "/client/component/test.js"
+            "datGui": {
+                "js":  "/client/component/datGui.js",
+                "css": "",
+            "devContent": {
+                "js":  "/client/component/devContent.js",
+                "css": "",
+            "section": {
+                "js":  "/client/component/section.js",
+                "css": "",
+            "test": {
+                "js":  "/client/component/test.js",
+                "css": "",
         },
         "modules": {
-            "appState": {
-                "js": "/client/modules/appState.js",
-                "css": ""
+            "appState": "/client/modules/appState.js"
             }
         }
     }

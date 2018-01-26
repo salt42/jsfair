@@ -1,23 +1,54 @@
 "use strict";
-var core    = require ('jsfair/coreAddOns').client;
+var core    = require ('jsfair/coreAddOns');
 var config  = require('jsfair/config');
 var log     = require('jsfair/log')("autoHeader");
 let fs      = require("fs");
 let Path    = require("path");
 let tagEnd = '\r\n\t\t';
 
-config.registerConfig({//ok
+config.registerConfig({
     client: {
         deinValue: "default value"
     }
 });
-///                     0               1
+
+let component = {
+    name: "",
+    scriptPath: "",
+    cssPath:    "",
+};
+let module = {
+    name: "",
+    scriptPath: ""
+};
+
 let _components = {
-    core: [],
-    preScripts: [],//die kann man vorallem durch das hinting so schön logisch machen
-    post: "usw"
-}; // [{comp:"comp1"},{comp:"comp1"},{comp:"comp1"},{comp:"comp1"}]
+    components: {
+        core: [],
+        pre: [],
+        post: []
+    },
+    modules: {
+        core: [],
+        pre: [],
+        post: []
+    },
+};
+
 let _componentsHash; //dann eher
+
+let Components = {};
+let Modules = {};
+
+let coreCss = '<!-- stylesheets -->' + tagEnd;
+let preCss = "";
+let commonCss = "";
+let postCss = "";
+
+let coreScript = '<!-- scripts -->' + tagEnd;
+let preScript = "";
+let commonScript = "";
+let postScript = "";
 
 hookIn.systemReady(() => {
     log("Search Components");
@@ -32,19 +63,111 @@ module.exports = {};
 module.exports.testApiFunc = () => {
     //datten aus den listen wieder zurückgeben ah ok also
 };
+
+function get compPaths(){
+
+    /* region jquery */
+    let a = config.client.jquery;
+    if (a.length > 1) {
+        if (!Components.core) Components.core = [];
+        for (let i = 0; i < a.length; i++) {
+
+            Components.core.push({
+                name: "jquery part " + (i + 1),
+                scriptPath: a[i],
+                cssPath: null
+            });
+        }
+    }
+    /*endregion*/
+    /* region core comps */
+    a = config.client.coreComponents;
+    if (a.length > 1) {
+        if (!Components.core) Components.core = [];
+        for (let coreName in a) {
+            if (a.hasOwnProperty(coreName) && a[coreName] === true) {
+                a = core.client.components[coreName];
+                if (a) Components.core.push({
+                    name: coreName,
+                    scriptPath: a.js,
+                    cssPath: a.css
+                });
+            }
+        }
+    }
+    /*endregion*/
+    /* region pre comps */
+    /*endregion*/
+    /* region common comps */
+    a = config.client.componentPaths;
+    if (a.length > 1) {
+        if (!Components.common) Components.common = [];
+        if (a.length !== 0) {
+            for (let i = 0; i < a.length; i++) {
+                let comp = searchComponents(a[i]);
+                if (!comp) continue;
+                Components.common = Components.common.concat(comp);
+            }
+        }
+    }
+    /*endregion*/
+    /* region post comps */
+    /*endregion*/
+}
+
+function get modulePaths(){
+    /* region core modules */
+    let a = config.client.coreModules;
+    if (a.length > 1) {
+        if (!Modules.core) Modules.core = [];
+        for (let coreName in a) {
+            if (a.hasOwnProperty(coreName) && a[coreName] === true) {
+                if (core.client.modules[coreName]) Modules.core.push({
+                    name: coreName,
+                    scriptPath: core.client.modules[coreName]
+                });
+            }
+        }
+    }
+    /*endregion*/
+    /* region pre modules */
+    a = [];
+    if (a.length > 1) {
+        if (!Modules.pre) Modules.pre = [];
+    }
+    /*endregion*/
+    /* region common modules */
+    a = config.client.modulePaths;
+    if (a.length > 1) {
+        if (!Modules.common) Modules.common = [];
+        for (let i = 0; i < config.client.modulePaths.length; i++) {
+            let moduleResult = searchModules(config.client.modulePaths[i]);
+            Modules.pre = Modules.concat(moduleResult.modules);
+            Components.pre = Components.concat(moduleResult.components);
+        }
+    }
+    /*endregion*/
+    /* region post modules */
+    a = [];
+    if (a.length > 1) {
+        if (!Modules.post) Modules.post = [];
+    }
+    /*endregion*/
+
+}
 hookIn.http_init(function(app) {
-    let Modules = [];
-    let Components = [];
-
-    let coreCss = '<!-- stylesheets -->' + tagEnd;
-    let preCss = "";
-    let componentCss = "";
-    let postCss = "";
-
-    let coreScript = '<!-- scripts -->' + tagEnd;
-    let preScript = "";
-    let componentAndModuleScript = "";
-    let postScript = "";
+    // let Modules = [];
+    // let Components = [];
+    //
+    // let coreCss = '<!-- stylesheets -->' + tagEnd;
+    // let preCss = "";
+    // let componentCss = "";
+    // let postCss = "";
+    //
+    // let coreScript = '<!-- scripts -->' + tagEnd;
+    // let preScript = "";
+    // let componentAndModuleScript = "";
+    // let postScript = "";
 
     /* region create header tags pre section */
     coreScript += '<script src="/jsfair/libsmin.js"></script>' + tagEnd;

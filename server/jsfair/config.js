@@ -25,9 +25,10 @@ let defaults = {
         }
     },
     client: {
+        jquery: ["/jsfair/libsmin.js", "/jsfair/jsfair.js"],
         coreModules: {
         },
-        coreComponent: {
+        coreComponents: {
             section:    true,
         },
         modulePaths: ["/server/routes"],
