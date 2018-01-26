@@ -51,20 +51,37 @@ function runStatement(name, opt = {}, select = null) {
         if (!parts[i]) continue;
         if (select && select.indexOf(i) > 0) continue;
 
-        let func = parts[i].slice(0, parts[i].indexOf("\r\n")),
-            statement = parts[i].slice(parts[i].indexOf("\r\n") + 2)
+    //
+        let func = parts[i].split(/\r?\n/)[0],   //.slice(0, parts[i].indexOf("\n")),
+            statement = parts[i].slice(func.length)
                 .replace(/[\n\r]/g, " ")
                 .replace(/[\t]/g, " ")
                 .trim();
 
-        let stm = DB.prepare(statement);
-        let r = stm[func].call(stm, opt);
-        result.push(r);
+        func = func.replace((/  |\r\n|\n|\r/gm),"");
+        statement = statement.replace((/  |\r\n|\n|\r/gm),"");
+        statement = statement.replace(/!\w*/, function(a, b){
+            a = a.substr(1);
+            log(a);
+            log(opt);
+            a = opt[a];
+            return a;
+        });
+        let result = [];
+        try {
+            let stm = DB.prepare(statement);
+            result = stm[func].call(stm, opt);
+        }catch (e) {
+            log.error("runStatement %s from %s.sql  '%s'", i, name, statement);
+            log.error("statement variables: ", opt);
+            console.log(e);
+        }
+        result.push(result);
     }
     return result;
 }
 function init() {
-    log("Init");
+    log.info("Init");
     hook.trigger("db_prepare", DB);
     // hook.getTrigger("db_addMethod", function(trigger, args) {
     //     if (!args || !args[0]) {
