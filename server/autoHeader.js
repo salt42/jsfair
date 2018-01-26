@@ -6,6 +6,12 @@ let fs      = require("fs");
 let Path    = require("path");
 let tagEnd = '\r\n\t\t';
 
+config.registerConfig({
+    client: {
+        deinValue: "default value"
+    }
+});
+//nein war ein spaß ...
 hookIn.http_init(function(app) {
     let Modules = [];
     let Components = [];
@@ -24,18 +30,18 @@ hookIn.http_init(function(app) {
     coreScript += '<script src="/jsfair/libsmin.js"></script>' + tagEnd;
     coreScript += '<script src="/jsfair/jsfair.js"></script>' + tagEnd;
 
-    for (let coreComponent in config.client.coreComponent){
-        if (config.client.coreComponent.hasOwnProperty(coreComponent) && coreComponent === true){
-            let corePath = Path.join(jsfairPath, core.components[coreComponent]);
+    for (let coreModule in config.client.coreModules){
+        if (config.client.coreModules.hasOwnProperty(coreModule) && coreModule === true){
+            let corePath = Path.join(jsfairPath, core.modules[coreModule]);
             coreScript += createScriptTag(corePath);
         }
     }
-    for (let coreModules in config.client.coreModules){
-        if (config.client.coreModules.hasOwnProperty(coreModules) && coreModules === true){
-            let coreModule = core.components[coreModules];
-            let corePath = Path.join(jsfairPath, coreModule.js);
+    for (let coreComponents in config.client.coreComponent){
+        if (config.client.coreComponent.hasOwnProperty(coreComponents) && coreComponents === true){
+            let coreComponent = core.components[coreComponents];
+            let corePath = Path.join(jsfairPath, coreComponent.js);
             coreScript += createScriptTag(corePath);
-            corePath = (coreModule.css === "") ? null : Path.join(jsfairPath, coreModule.css);
+            corePath = (coreComponent.css === "") ? null : Path.join(jsfairPath, coreComponent.css);
             coreScript += (corePath === null) ? "" : createCssTag(corePath);
         }
     }

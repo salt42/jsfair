@@ -25,10 +25,16 @@ let defaults = {
         }
     },
     client: {
-        defaultModules: [],
-        defaultComponents: [],
-        modulePaths: [],
-        componentPaths: [],
+        coreModules: //fuck, ja, falsch rum gedacht... comp können css haben+ mom
+        },
+        coreComponent: {
+            datGui:     false,
+            devContent: false,
+            section:    true,
+            test:       false,
+        },
+        modulePaths: ["/server/routes"],
+        componentPaths: ["/client/component"],
         preCss: [],
         postCss: [],
         preScript: [],
