@@ -3,24 +3,24 @@
         "components": {
             "datGui": {
                 "name": "datGui",
-                "js": "/client/component/datGui.js",
+                "js": "/component/datGui.js",
                 "css": ""
             },
             "devContent": {
                 "name": "devContent",
-                "js": "/client/component/devContent.js",
+                "js": "/component/devContent.js",
                 "css": ""
             },
             "section": {
                 "name": "section",
-                "js": "/client/component/section.js",
+                "js": "/component/section.js",
                 "css": ""
             }
         },
         "modules": {
             "appState": {
                 "name": "appState",
-                "js":   "/client/modules/appState.js"
+                "js":   "/modules/appState.js"
             }
         }
     }

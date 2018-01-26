@@ -85,9 +85,6 @@ try {
     log("Start %s Server", conf.appName);
     try {
         //@todo load server modules -> from componentManager->getActiveServerModuleIDs
-        // im endeffekt kann man den ganzen autoheader umbenennen und nen mini autoheader bauen der nur die daten veröffentlicht
-        // genau dann tut er auch was der name sugeriert. ja es bleibt wenig im autoHeader^^ aber dafür is es geil wenn wir ein minimizer bauen
-        //des is falsch ok server macht sinn.. wieso hast du es zurück geändert?
         for (let x = 0; x < conf.server.modulePaths.length; x++) {
             let loadPath = fs.realpathSync(rootPath + "/" + conf.server.modulePaths[x]);
             let dir = fs.readdirSync(loadPath);

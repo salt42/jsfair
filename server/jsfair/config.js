@@ -29,8 +29,6 @@ let defaults = {
         coreComponents: {
             section:    true,
         },
-        modulePaths: ["/server/routes"],
-        componentPaths: ["/client/component"],
         preCss: [],
         postCss: [],
         preScript: [],
@@ -64,6 +62,7 @@ function load(path) {
     let content = fs.readFileSync(path);
     content = JSON.parse(content);
     conf = merge(defaults, content, { arrayMerge: overwriteMerge });
+    save();
 }
 function save() {
     checkConfFile();

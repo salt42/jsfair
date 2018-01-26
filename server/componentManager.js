@@ -1,17 +1,21 @@
 "use strict";
-var core    = require ('jsfair/coreAddOns');
-var config  = require('jsfair/config');
-var log     = require('jsfair/log')("compManager".yellow);
-let fs      = require("fs");
-let Path    = require("path");
+const core    = require ('jsfair/coreAddOns');
+const config  = require('jsfair/config');
+const log     = require('jsfair/log')("compManager".yellow);
+const fs      = require("fs");
+const Path    = require("path");
 
 let items = {
+    clientCoreModules: [],
+    clientCoreComponents: [],
+    clientPreScript: [],
+    clientPreCss: [],
     clientComponents: [],
     clientModules: [],
-    clientPreCss: [],
     clientPostCss: [],
-    clientPreScript: [],
     clientPostScript: [],
+};
+let inactiveItems = {
     clientCoreModules: [],
     clientCoreComponents: []
 };
@@ -28,12 +32,21 @@ function  run() {
     a = config.client.coreModules;
     for (let coreItem in a){
         if (a.hasOwnProperty(coreItem) && a[coreItem] === true){
-            let cJs  = Path.join(jsfairPath, core.client.components[coreItem].js );
             items.clientCoreModules.push({
                 type:    "module",
                 section: "core",
                 name:    coreItem,
-                js:      (cJs  === "" || cJs  === null) ? null : cJs,
+                js:      core.client.components[coreItem].js,
+                css:     null,
+                html:    null,
+            });
+        }
+        if (a.hasOwnProperty(coreItem) && a[coreItem] === false){
+            inactiveItems.clientCoreModules.push({
+                type:    "module",
+                section: "core",
+                name:    coreItem,
+                js:      core.client.components[coreItem].js,
                 css:     null,
                 html:    null,
             });
@@ -42,14 +55,24 @@ function  run() {
     a = config.client.coreComponents;
     for (let coreItem in a){
         if (a.hasOwnProperty(coreItem) && a[coreItem] === true){
-            let cJs  = Path.join(jsfairPath, core.client.components[coreItem].js );
-            let cCss = Path.join(jsfairPath, core.client.components[coreItem].css);
+            let cCss = core.client.components[coreItem].css;
             items.clientCoreComponents.push({
                 type:    "module",
                 section: "core",
                 name:    coreItem,
-                js:      (cJs  === "" || cJs  === null) ? null : cJs,
-                css:     (cCss === "" || cCss === null) ? null : cCss,
+                js:      core.client.components[coreItem].js,
+                css:     (cCss === null || cCss ==="") ? null : cCss,
+                html:    null,
+            });
+        }
+        if (a.hasOwnProperty(coreItem) && a[coreItem] === false){
+            let cCss = core.client.components[coreItem].css;
+            inactiveItems.clientCoreComponents.push({
+                type:    "module",
+                section: "core",
+                name:    coreItem,
+                js:      core.client.components[coreItem].js,
+                css:     (cCss === null || cCss ==="") ? null : cCss,
                 html:    null,
             });
         }
@@ -141,34 +164,38 @@ function createRelativePath(path){
     }
     return path;
 }
+function createAbsolutePath(relPath) {
+    let a = config.server.http.staticDirs;
+    for (let i = 0; i < a.length; i++){
+        let b = Path.join(ROOT_PATH, a[i], relPath);
+        if (fs.existsSync(b)) return  b;
+    }
+    return null;
+}
 /*endregion*/
 
 /* region auto read components */
 function readCompDirectory(name, path) {
     let noExt = Path.join(path, name);
     let scriptPath = noExt + ".js";
-    if (!fs.existsSync(scriptPath)) return null;
-    return {
+    if (!fs.existsSync(scriptPath)) throw new Error("Component path " +path+ " doesn't exist");
+    items.clientComponents.push({
         type:    "component",
         section: "common",
         name:    name,
         js:      createRelativePath(scriptPath),
-        css:     (fs.existsSync(noExt + ".css" )) ? noExt + ".css"  : null,
-        html:    (fs.existsSync(noExt + ".html")) ? noExt + ".html" : null,
-    };
+        css:     (fs.existsSync(noExt + ".css" )) ? createRelativePath(noExt + ".css")  : null,
+        html:    (fs.existsSync(noExt + ".html")) ? createRelativePath(noExt + ".html") : null,
+    });
 }
 function searchComponents(relPath) {
-    let path = ROOT_PATH + relPath;
-    let comps = [];
-    if (!fs.existsSync(path))return;
+    let path = createAbsolutePath(relPath);
+    if (path === null)throw new Error("Component path " +path+ " doesn't exist");
     let dir = fs.readdirSync(path);// Returns an array of filenames excluding '.' and '..'.
     for (let i = 0; i < dir.length; i++) {
         let fullPath = Path.join(path, dir[i]);
         if (fs.statSync(fullPath).isDirectory()){
-            let a = readCompDirectory(dir[i], fullPath);
-            if (a !== null) {
-                items.clientComponents.push(a);
-            }
+            readCompDirectory(dir[i], fullPath);
         } else {
             items.clientComponents.push({
                 type:    "component",
@@ -222,8 +249,8 @@ function readModuleDirectory(name, path) {
     }
 }
 function searchModules(relPath) {
-    let path = ROOT_PATH + relPath;
-    if (!fs.existsSync(path))return null;
+    let path = createAbsolutePath(relPath);
+    if (path === null)throw new Error("Module path " +path+ " doesn't exist");
     let dir = fs.readdirSync(path);// array of filenames
     let submodule = {
         modules: [],
@@ -253,35 +280,27 @@ function searchModules(relPath) {
 }
 /*endregion*/
 
+log("Search Components");
+run();
+
+log("Found Components, are they yours?");
 hookIn.systemReady(() => {
-    log("Search Components");
-    run();
 });
 
-
 function makeIterator(type, valueType) {
-    let nextIndex = 0;
     let array = items[type];
-
-    return {
-        next: function () {
-            if (nextIndex < array.length) {
-                if (valueType) {
-                    return {value: array[nextIndex++][valueType], done: false};
-                } else {
-                    return {value: array[nextIndex++], done: false};
-                }
+    return function* () {
+        for(let i = 0; i < array.length; i++) {
+            if (valueType) {
+                yield array[i++][valueType];
             } else {
-                return {done: true};
+                yield array[i++];
             }
         }
-    }
-}
-
-for (let path of makeIterator("clientComponents", path)) {
-
+    }();
 }
 module.exports = {
     items: items,
+    inactive: inactiveItems,
     getIterator: makeIterator,
 };
