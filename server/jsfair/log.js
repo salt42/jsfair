@@ -5,11 +5,25 @@
 
 var util = require('util');
 module.exports = function(moduleName) {
-    return function(...args) {
+    let logger = function(...args) {
         let msg = util.format(...args);
-        let a = `[${moduleName}] ${msg}`;
-
         // process.stdout.write(a.toString());
-        console.log(`[${moduleName}] ${msg}`);
-    }
+        console.log("[%s]".magenta + " %s", moduleName, msg);
+    };
+    logger.error = function(...args) {
+        let msg = util.format(...args);
+        // process.stdout.write(a.toString());
+        console.log("[%s]".red + " %s", moduleName, msg);
+    };
+    logger.warn = function(...args) {
+        let msg = util.format(...args);
+        // process.stdout.write(a.toString());
+        console.log("[%s]".yellow + " %s", moduleName, msg);
+    };
+    logger.info = function(...args) {
+        let msg = util.format(...args);
+        // process.stdout.write(a.toString());
+        console.log("[%s] %s", moduleName, msg);
+    };
+    return logger;
 };
