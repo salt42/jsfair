@@ -84,6 +84,7 @@ hookIn.http_init(function(app) {
     if (config.client.modulePaths.length !== 0) {
         for (let i = 0; i < config.client.modulePaths.length; i++) {
             let moduleResult = searchModules(config.client.modulePaths[i]);
+            if (!moduleResult) continue;//@todo warum is des nötig (des war der error gestern abend)!!!!!!!!!!!!!!!!!!!!
             Modules = Modules.concat(moduleResult.modules);
             Components = Components.concat(moduleResult.components);
         }
