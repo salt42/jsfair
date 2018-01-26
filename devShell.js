@@ -1,9 +1,11 @@
 const fs = require("fs");
 const { fork } = require('child_process');
+const browser = require("./server/browserBridge");
 
 let scriptPath = fs.realpathSync(__dirname + '/main.js');
 let rootPath;
 let devInstance;
+/*region color vars*/
 let Reset = "\x1b[0m"
 let Bright = "\x1b[1m"
 let Dim = "\x1b[2m"
@@ -29,7 +31,7 @@ let BgBlue = "\x1b[44m"
 let BgMagenta = "\x1b[45m"
 let BgCyan = "\x1b[46m"
 let BgWhite = "\x1b[47m"
-
+/*endregion*/
 //check arguments
 function helpPage(err) {
     console.log("Error: %s".red, err);
@@ -54,6 +56,9 @@ stdin.resume();// resume stdin in the parent process (node app won't quit all by
 
 let liveReload = false;
 let headerStyle = Underscore +  FgCyan + BgBlack;
+
+browser.init();
+
 function draw() {
     let liveColor = (!liveReload)? BgRed: BgGreen;
     process.stdout.write('\033c');
@@ -82,7 +87,8 @@ stdin.on( 'data', function( key ){
                 return;
             case "e":
                 process.stdout.write(FgCyan + "-> RELOAD PAGE" + Reset + "\n");
-                devInstance.send({com: "refreshClients"});
+                browser.reload();
+                // devInstance.send({com: "refreshClients"});
                 return;
             case "r":
                 //toggle live reload

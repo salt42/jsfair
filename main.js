@@ -29,9 +29,7 @@ let hookProxyHandler = {
     }
 };
 /* endregion */
-global.hookIn = new Proxy({}, hookProxyHandler);
-global.ROOT_PATH = fs.realpathSync(rootPath);
-global.jsfairPath = fs.realpathSync(__dirname);
+
 /* region handle CMD arguments */
 //handle arguments
 function helpPage(err) {
@@ -50,21 +48,26 @@ if (process.argv.indexOf('--root') > -1) {
 }
 
 /* endregion*/
+global.DEV_MODE= (process.argv.indexOf('--dev') > -1);
+global.hookIn = new Proxy({}, hookProxyHandler);
+global.ROOT_PATH = fs.realpathSync(rootPath);
+global.jsfairPath = fs.realpathSync(__dirname);
 const conf = require('jsfair/config')(rootPath + "/conf.json");
-const browser = require("./server/browserBridge");
 let autoHeader = require("./server/autoHeader");
 
 /* region dev mode */
 //dev mode
 if (DEV_MODE) {
-    log("load browser bridge");
+    log.info("run in dev mode");
+    //inject js for browser bride
+    conf.client.preScript.push("/jsfair/browserBridge.js");
     //stdin
     process.on('message', message => {
         if (!message.hasOwnProperty("com")) return;
         switch(message.com) {
             case "refreshClients":
                 try {
-                    browser.reload();
+                    // browser.reload();
                 } catch (e) {
                     console.log(e);
                 }
@@ -109,10 +112,9 @@ try {
     }
     db.init(); //use init hook
     express.init();//use init hook
-    browser.init();//use init hook
+    // browser.init();//use init hook
     //@todo add init hook
-    hook.trigger("systemReady"); //such dir was aus hä? wofür?
-
+    hook.trigger("systemReady");
 } catch (e) {
     console.log(e);
 }

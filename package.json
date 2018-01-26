@@ -16,6 +16,7 @@
   "author": "",
   "dependencies": {
     "better-sqlite3": "^4.1.0",
+    "chokidar": "^2.0.0",
     "colors": "^1.1.2",
     "cookie-parser": "^1.4.3",
     "deepmerge": "^2.0.1",

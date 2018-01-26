@@ -37,12 +37,17 @@ let defaults = {
         postScript: []
     },
     registerConfig(newConf) {
-        defaults = merge(defaults, newConf);
-        conf = merge(conf, newConf);
+        defaults = merge(defaults, newConf, { arrayMerge: overwriteMerge });
+        conf = merge(conf, newConf, { arrayMerge: overwriteMerge });
         save();
     }
 };
-
+function overwriteMerge(destinationArray, sourceArray, options) {
+    for (let i = 0; i < sourceArray.length; i++) {
+        if (destinationArray.indexOf(sourceArray[i]) < 0 ) destinationArray.push(sourceArray[i]);
+    }
+    return destinationArray
+}
 module.exports = function(path) {
     load(path);
     module.exports = conf;
@@ -58,7 +63,7 @@ function load(path) {
     checkConfFile();
     let content = fs.readFileSync(path);
     content = JSON.parse(content);
-    conf = merge(defaults, content);
+    conf = merge(defaults, content, { arrayMerge: overwriteMerge });
 }
 function save() {
     checkConfFile();
