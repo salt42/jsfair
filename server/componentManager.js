@@ -5,7 +5,16 @@ var log     = require('jsfair/log')("compManager".yellow);
 let fs      = require("fs");
 let Path    = require("path");
 
-let items = [];
+let items = {
+    clientComponents: [],
+    clientModules: [],
+    clientPreCss: [],
+    clientPostCss: [],
+    clientPreScript: [],
+    clientPostScript: [],
+    clientCoreModules: [],
+    clientCoreComponents: []
+};
 
 // config.registerConfig({
 //     client: {
@@ -14,108 +23,108 @@ let items = [];
 // });
 
 function  run() {
-/* region create header tags pre section */
-let a = config.client.coreModules;
-for (let coreItem in a){
-    if (a.hasOwnProperty(coreItem) && a[coreItem] === true){
-        let cJs  = Path.join(jsfairPath, core.client.components[coreItem].js );
-        items.push({
-            type:    "module",
-            section: "core",
-            name:    coreItem,
-            js:      (cJs  === "" || cJs  === null) ? null : cJs,
-            css:     null,
-            html:    null,
-        });
+    /* region create header tags pre section */
+    let a;
+    a = config.client.coreModules;
+    for (let coreItem in a){
+        if (a.hasOwnProperty(coreItem) && a[coreItem] === true){
+            let cJs  = Path.join(jsfairPath, core.client.components[coreItem].js );
+            items.clientCoreModules.push({
+                type:    "module",
+                section: "core",
+                name:    coreItem,
+                js:      (cJs  === "" || cJs  === null) ? null : cJs,
+                css:     null,
+                html:    null,
+            });
+        }
     }
-}
-a = config.client.coreComponents;
-for (let coreItem in a){
-    if (a.hasOwnProperty(coreItem) && a[coreItem] === true){
-        let cJs  = Path.join(jsfairPath, core.client.components[coreItem].js );
-        let cCss = Path.join(jsfairPath, core.client.components[coreItem].css);
-        items.push({
-            type:    "module",
-            section: "core",
-            name:    coreItem,
-            js:      (cJs  === "" || cJs  === null) ? null : cJs,
-            css:     (cCss === "" || cCss === null) ? null : cCss,
-            html:    null,
-        });
+    a = config.client.coreComponents;
+    for (let coreItem in a){
+        if (a.hasOwnProperty(coreItem) && a[coreItem] === true){
+            let cJs  = Path.join(jsfairPath, core.client.components[coreItem].js );
+            let cCss = Path.join(jsfairPath, core.client.components[coreItem].css);
+            items.clientCoreComponents.push({
+                type:    "module",
+                section: "core",
+                name:    coreItem,
+                js:      (cJs  === "" || cJs  === null) ? null : cJs,
+                css:     (cCss === "" || cCss === null) ? null : cCss,
+                html:    null,
+            });
+        }
     }
-}
-a = config.client.preCss;
-if (a.length > 0){
-    for(let i = 0; i < a.length; i++){
-        items.push({
-            type:    "css",
-            section: "pre",
-            name:    Path.basename(a[i], ".css"),
-            js:      null,
-            css:     a[i],
-            html:    null,
-        });
+    a = config.client.preCss;
+    if (a.length > 0){
+        for(let i = 0; i < a.length; i++){
+            items.clientPreCss.push({
+                type:    "css",
+                section: "pre",
+                name:    Path.basename(a[i], ".css"),
+                js:      null,
+                css:     a[i],
+                html:    null,
+            });
+        }
     }
-}
-a = config.client.preScript;
-if (a.length > 0){
-    for(let i = 0; i < a.length; i++){
-        items.push({
-            type:    "js",
-            section: "pre",
-            name:    Path.basename(a[i], ".js"),
-            js:      a[i],
-            css:     null,
-            html:    null,
-        });
+    a = config.client.preScript;
+    if (a.length > 0){
+        for(let i = 0; i < a.length; i++){
+            items.clientPreScript.push({
+                type:    "js",
+                section: "pre",
+                name:    Path.basename(a[i], ".js"),
+                js:      a[i],
+                css:     null,
+                html:    null,
+            });
+        }
     }
-}
-/*endregion*/
+    /*endregion*/
 
-/* region create header tags post section */
-a = config.client.postCss;
-if (a.length > 0){
-    for(let i = 0; i < a.length; i++){
-        items.push({
-            type:    "css",
-            section: "post",
-            name:    Path.basename(a[i], ".css"),
-            js:      null,
-            css:     a[i],
-            html:    null,
-        });
+    /* region create header tags post section */
+    a = config.client.postCss;
+    if (a.length > 0){
+        for(let i = 0; i < a.length; i++){
+            items.clientPostCss.push({
+                type:    "css",
+                section: "post",
+                name:    Path.basename(a[i], ".css"),
+                js:      null,
+                css:     a[i],
+                html:    null,
+            });
+        }
     }
-}
-a = config.client.postScript;
-if (a.length > 0){
-    for(let i = 0; i < a.length; i++){
-        items.push({
-            type:    "js",
-            section: "post",
-            name:    Path.basename(a[i], ".js"),
-            js:      a[i],
-            css:     null,
-            html:    null,
-        });
+    a = config.client.postScript;
+    if (a.length > 0){
+        for(let i = 0; i < a.length; i++){
+            items.clientPostScript.push({
+                type:    "js",
+                section: "post",
+                name:    Path.basename(a[i], ".js"),
+                js:      a[i],
+                css:     null,
+                html:    null,
+            });
+        }
     }
-}
-/*endregion*/
+    /*endregion*/
 
-/* region gather data of components and modules */
-a = config.client.componentPaths;
-if (a.length > 0) {
-    for (let i = 0; i < a.length; i++) {
-        searchComponents(a[i]);
+    /* region gather data of components and modules */
+    a = config.client.componentPaths;
+    if (a.length > 0) {
+        for (let i = 0; i < a.length; i++) {
+            searchComponents(a[i]);
+        }
     }
-}
-a = config.client.modulePaths;
-if (a.length > 0) {
-    for (let i = 0; i < a.length; i++) {
-        searchModules(a[i]);
+    a = config.client.modulePaths;
+    if (a.length > 0) {
+        for (let i = 0; i < a.length; i++) {
+            searchModules(a[i]);
+        }
     }
-}
-/*endregion*/
-
+    /*endregion*/
 }
 
 /* region auxiliaries */
@@ -158,10 +167,10 @@ function searchComponents(relPath) {
         if (fs.statSync(fullPath).isDirectory()){
             let a = readCompDirectory(dir[i], fullPath);
             if (a !== null) {
-                items.push(a);
+                items.clientComponents.push(a);
             }
         } else {
-            items.push({
+            items.clientComponents.push({
                 type:    "component",
                 section: "common",
                 name:    Path.basename(fullPath, ".js"),
@@ -183,7 +192,7 @@ function readModuleDirectory(name, path) {
     for (let i = 0; i < dir.length; i++) {
         if (name + ".js" === dir[i]) {
             // module.js
-            items.push({
+            items.clientModules.push({
                 type:    "module",
                 section: "common",
                 name:    name,
@@ -195,7 +204,7 @@ function readModuleDirectory(name, path) {
             let subDir = Path.join(path, dir[i]);
             if (!fs.statSync(subDir).isDirectory()) {
                 // sub_module.js
-                items.push({
+                items.clientModules.push({
                     type:    "module",
                     section: "common",
                     name:    Path.basename(subDir, ".js"),
@@ -206,7 +215,7 @@ function readModuleDirectory(name, path) {
             } else {
                 if (dir[i] == "component" || dir[i] == "components") {
                     let relSubDir = subDir.replace(ROOT_PATH, "");
-                    let a = searchComponents(relSubDir);
+                    searchComponents(relSubDir);
                 }
             }
         }
@@ -225,7 +234,7 @@ function searchModules(relPath) {
         let fullPath = Path.join(path, dir[i]);
         if (!fs.statSync(fullPath).isDirectory() && Path.extname(fullPath) === ".js" ){
             //module name
-            items.push({
+            items.clientModules.push({
                 type:    "module",
                 section: "common",
                 name:    Path.basename(fullPath, ".js"),
@@ -236,21 +245,43 @@ function searchModules(relPath) {
         } else {
             submodule = readModuleDirectory(dir[i], fullPath);
             if (submodule !== null) {
-                items = items.concat(submodule.modules);
-                items = items.concat(submodule.components);
+                items.clientModules    = items.clientModules.concat(submodule.modules);
+                items.clientComponents = items.clientComponents.concat(submodule.components);
             }
         }
     }
 }
 /*endregion*/
 
-run();
-log(items.red);
-
 hookIn.systemReady(() => {
     log("Search Components");
     run();
-    log(items.green);
-    module.exports = {
-    };
 });
+
+
+function makeIterator(type, valueType) {
+    let nextIndex = 0;
+    let array = items[type];
+
+    return {
+        next: function () {
+            if (nextIndex < array.length) {
+                if (valueType) {
+                    return {value: array[nextIndex++][valueType], done: false};
+                } else {
+                    return {value: array[nextIndex++], done: false};
+                }
+            } else {
+                return {done: true};
+            }
+        }
+    }
+}
+
+for (let path of makeIterator("clientComponents", path)) {
+
+}
+module.exports = {
+    items: items,
+    getIterator: makeIterator,
+};
