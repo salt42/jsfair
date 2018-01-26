@@ -25,13 +25,10 @@ let defaults = {
         }
     },
     client: {
-        coreModules: //fuck, ja, falsch rum gedacht... comp können css haben+ mom
+        coreModules: {
         },
         coreComponent: {
-            datGui:     false,
-            devContent: false,
             section:    true,
-            test:       false,
         },
         modulePaths: ["/server/routes"],
         componentPaths: ["/client/component"],

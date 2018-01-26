@@ -1,7 +1,6 @@
 {
     "client": {
         "components": {
-            // "addOnName": "/path/relative/to/main.js-file,
             "datGui": "/client/component/datGui.js",
             "devContent": "/client/component/devContent.js",
             "section": "/client/component/section.js",

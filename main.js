@@ -1,5 +1,5 @@
 "use strict";
-
+/* region hacks */
 module.paths.push(__dirname + "/server");
 process.env.NODE_PATH = __dirname + "/server";
 require('module').Module._initPaths();
@@ -7,12 +7,16 @@ require('module').Module._initPaths();
 process.on('uncaughtException', function (err) {
     console.log(err);
 });
+/*endregion*/
+
 const DEV_MODE= (process.argv.indexOf('--dev') > -1)? true: false;
 const colors  = require('colors');
 const fs      = require("fs");
 const log     = require('jsfair/log')('main');
 const hook    = require('./server/hook');
 let rootPath = "";
+
+/* region hookSystem */
 let hookProxyHandler = {
     get: function(target, name) {
         return function(...args) {
@@ -24,10 +28,11 @@ let hookProxyHandler = {
         }
     }
 };
+/* endregion */
 global.hookIn = new Proxy({}, hookProxyHandler);
 global.ROOT_PATH = fs.realpathSync(rootPath);
 global.jsfairPath = fs.realpathSync(__dirname);
-
+/* region handle CMD arguments */
 //handle arguments
 function helpPage(err) {
     console.log("Error: %s".red, err);
@@ -44,9 +49,12 @@ if (process.argv.indexOf('--root') > -1) {
     return;
 }
 
+/* endregion*/
 const conf = require('jsfair/config')(rootPath + "/conf.json");
 const browser = require("./server/browserBridge");
 let autoHeader = require("./server/autoHeader");
+
+/* region dev mode */
 //dev mode
 if (DEV_MODE) {
     log("load browser bridge");
@@ -66,12 +74,17 @@ if (DEV_MODE) {
     });
 }
 
+/* endregion */
+//so und hier werden einfach alle server module geladen und dannach fehlt noch der init hook
 try {
     let db = require("jsfair/database");
     let express = require("./server/express");
     log("Start %s Server", conf.appName);
     try {
-        //@todo if conf.client.defaultComponent.length > 0 then load this modules to
+        //@todo load server modules -> from componentManager->getActiveServerModuleIDs
+        // im endeffekt kann man den ganzen autoheader umbenennen und nen mini autoheader bauen der nur die daten veröffentlicht
+        // genau dann tut er auch was der name sugeriert. ja es bleibt wenig im autoHeader^^ aber dafür is es geil wenn wir ein minimizer bauen
+        //des is falsch ok server macht sinn.. wieso hast du es zurück geändert?
         for (let x = 0; x < conf.server.modulePaths.length; x++) {
             let loadPath = fs.realpathSync(rootPath + "/" + conf.server.modulePaths[x]);
             let dir = fs.readdirSync(loadPath);
@@ -94,9 +107,11 @@ try {
         log(e.message.red);
         console.log(e);
     }
-    db.init();
-    express.init();
-    browser.init();
+    db.init(); //use init hook
+    express.init();//use init hook
+    browser.init();//use init hook
+    //@todo add init hook
+    hook.trigger("systemReady"); //such dir was aus hä? wofür?
 
 } catch (e) {
     console.log(e);
