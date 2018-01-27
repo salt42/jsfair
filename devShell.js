@@ -55,15 +55,21 @@ stdin.setEncoding( 'utf8' );
 stdin.resume();// resume stdin in the parent process (node app won't quit all by itself unless an error or process.exit() happens)
 
 let liveReload = false;
+let inspector = false;
 let headerStyle = Underscore +  FgCyan + BgBlack;
-
+let startArguments = ["--dev", '--inspectWait'];
 browser.init();
-
 function draw() {
     let liveColor = (!liveReload)? BgRed: BgGreen;
+    let inspectColor = (!inspector)? BgRed: BgGreen;
     process.stdout.write('\033c');
     process.stdout.write(headerStyle + "# JsFair Dev Server\ " +
-        "                         [q = quit] [w = Restart Server] [e = Reload Page] [r = liveReload" + liveColor +" " + headerStyle + "]  " + Reset + "\n");
+        "                         [q = quit] [w = Restart Server] [e = Reload Page] [r = liveReload" + liveColor +" " + headerStyle + "] [t = inspect" + inspectColor +" " + headerStyle + "]  " + Reset + "\n");
+}
+function restartServer() {
+    process.stdout.write(FgCyan + "-> RESTARTING SERVER..." + Reset + "\n");
+    if (devInstance) killDevServer();
+    instantiateDevServer();
 }
 stdin.on( 'data', function( key ){
     // ctrl-c ( end of text )
@@ -72,6 +78,7 @@ stdin.on( 'data', function( key ){
         process.exit();
     }
     if (true) {
+        let color, text;
         switch(key) {
             case "q":
                 process.stdout.write(FgCyan + "-> REFRESHING CLIENTS" + Reset + "\n");
@@ -81,9 +88,7 @@ stdin.on( 'data', function( key ){
                 return;
             case "w":
                 draw();
-                process.stdout.write(FgCyan + "-> RESTARTING SERVER..." + Reset + "\n");
-                if (devInstance) killDevServer();
-                instantiateDevServer();
+                restartServer();
                 return;
             case "e":
                 process.stdout.write(FgCyan + "-> RELOAD PAGE" + Reset + "\n");
@@ -94,13 +99,32 @@ stdin.on( 'data', function( key ){
                 //toggle live reload
                 liveReload = !liveReload;
                 draw();
-                let color = FgGreen;
-                let text = "ACTIVATED";
+                color = FgGreen;
+                text = "ACTIVATED";
                 if (!liveReload) {
                     text = "DEACTIVATED";
                     color = FgRed;
                 }
-                process.stdout.write(FgCyan + "-> LIVE RELOAD " + color +((liveReload)?"ACTIVATED":"DEACTIVATED") + FgRed + "        (NOT IMPLEMENTED YET)" + Reset + "\n");
+                process.stdout.write(FgCyan + "-> LIVE RELOAD " + color + text + FgRed + "        (NOT IMPLEMENTED YET)" + Reset + "\n");
+                return;
+            case "t":
+                inspector = startArguments.indexOf("--inspect") > -1;
+                if (!inspector) {
+                    startArguments.push("--inspect");
+                    inspector = true;
+                } else {
+                    startArguments.splice(startArguments.indexOf("--inspect"));
+                    inspector = false;
+                }
+                color = FgGreen;
+                text = "ACTIVATED";
+                if (inspector) {
+                    text = "DEACTIVATED";
+                    color = FgRed;
+                }
+                draw();
+                process.stdout.write(FgCyan + "-> INSPECTOR " + color + text + FgRed + Reset + "\n");
+                restartServer();
                 return;
         }
     }
@@ -109,7 +133,8 @@ stdin.on( 'data', function( key ){
 });
 
 function instantiateDevServer() {
-    devInstance = fork(scriptPath, ["--dev", "--root", rootPath], { stdio: 'inherit' });
+    let args = ["--root", rootPath].concat(startArguments);
+    devInstance = fork(scriptPath, args, { stdio: 'inherit' });
     // devInstance = fork(scriptPath, ["--dev", "--root", rootPath], { stdio: ['pipe', 'pipe', 'pipe', 'ipc']  });
     // console.log(devInstance);
     // devInstance.stdout.on("data", function(e) {

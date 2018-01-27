@@ -31,6 +31,7 @@ let inactiveItems = {
 function  run() {
     /* region create header tags pre section */
     let a;
+    debugger;
     a = config.client.coreModules;
     for (let coreItem in a){
         if (a.hasOwnProperty(coreItem) && a[coreItem] === true){
@@ -267,7 +268,7 @@ function searchModules(relPath) {
 }
 /*endregion*/
 
-log("Search Components");
+log.info("Search Components");
 run();
 
 if(devMock) items = {
@@ -280,7 +281,7 @@ if(devMock) items = {
         clientPostCss:        mock("CPoC", "clientPostCss:"       ),
         clientPostScript:     mock("CpoS", "clientPostScript:"    ),
 };
-log("Found Components, are they yours?");
+log.info("Found Components, are they yours?");
 
 // hookIn.systemReady(() => {
 // });

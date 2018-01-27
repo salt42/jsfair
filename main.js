@@ -8,13 +8,30 @@ process.on('uncaughtException', function (err) {
     console.log(err);
 });
 /*endregion*/
-
+/* region read console arguments */
+//handle arguments
+let rootPath = "";
+function helpPage(err) {
+    console.log("Error: %s".red, err);
+    console.log("Usage: node main.js --root ../pathToProjectFolder [arguments]");
+}
+if (process.argv.indexOf('--root') > -1) {
+    rootPath = process.argv[process.argv.indexOf('--root') + 1];
+    if (rootPath === "") {
+        helpPage("can't start without root path!");
+        return;
+    }
+} else {
+    helpPage("can't start without root path!");
+    return;
+}
 const DEV_MODE= (process.argv.indexOf('--dev') > -1);
+const DEV_MODE_INSPECTOR= (process.argv.indexOf('--inspect') > -1);
+/* endregion*/
 const colors  = require('colors');
 const fs      = require("fs");
 const log     = require('jsfair/log')('main');
 const hook    = require('./server/hook');
-let rootPath = "";
 
 /* region hookSystem */
 let hookProxyHandler = {
@@ -30,35 +47,23 @@ let hookProxyHandler = {
 };
 /* endregion */
 
-/* region handle CMD arguments */
-//handle arguments
-function helpPage(err) {
-    console.log("Error: %s".red, err);
-    console.log("Usage: node main.js --root ../pathToProjectFolder [arguments]");
-}
-if (process.argv.indexOf('--root') > -1) {
-    rootPath = process.argv[process.argv.indexOf('--root') + 1];
-    if (rootPath === "") {
-        helpPage("can't start without root path!");
-        return;
-    }
-} else {
-    helpPage("can't start without root path!");
-    return;
-}
-
-/* endregion*/
 global.DEV_MODE= (process.argv.indexOf('--dev') > -1);
 global.hookIn = new Proxy({}, hookProxyHandler);
 global.ROOT_PATH = fs.realpathSync(rootPath);
 global.jsfairPath = fs.realpathSync(__dirname);
 const conf = require('jsfair/config')(rootPath + "/conf.json");
-let autoHeader = require("./server/autoHeader");
 
 /* region dev mode */
 //dev mode
 if (DEV_MODE) {
     log.info("run in dev mode");
+    if (DEV_MODE_INSPECTOR) {
+        let wait = process.argv.indexOf('--inspectWait') > -1;
+        const inspector = require('inspector');
+        // let aa = new inspector.Session();
+        if (wait) log.warn("waiting on inspector connection".yellow);
+        inspector.open(null, null, wait);
+    }
     //inject js for browser bride
     conf.client.preScript.push("/jsfair/browserBridge.js");
     //stdin
@@ -71,8 +76,14 @@ if (DEV_MODE) {
                 } catch (e) {
                     console.log(e);
                 }
-
                 break;
+            // case "startInspector":
+            //     try {
+            //         // browser.reload();
+            //     } catch (e) {
+            //         console.log(e);
+            //     }
+            //     break;
         }
     });
 }
@@ -82,6 +93,8 @@ if (DEV_MODE) {
 try {
     let db = require("jsfair/database");
     let express = require("./server/express");
+    let compMan = require('./server/componentManager');
+    let autoHeader = require("./server/autoHeader");
     log("Start %s Server", conf.appName);
     try {
         //@todo load server modules -> from componentManager->getActiveServerModuleIDs
