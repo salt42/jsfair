@@ -2,18 +2,17 @@
  * Created by salt on 28.10.2017.
  */
 "use strict";
-var config          = require('./jsfair/config');
-var log             = require('./jsfair/log')("express");
-var hook            = require('./hook');
-var express         = require('express');
-var path            = require('path');
-var favicon         = require('serve-favicon');
-var cookieParser    = require('cookie-parser');
-var bodyParser      = require('body-parser');
-var hbs             = require('express-hbs');
-
-var app = express();
-var PORT = parseInt(config.server.http.port);
+const config          = require('./jsfair/config');
+const log             = require('./jsfair/log')("express");
+const hook            = require('./hook');
+const express         = require('express');
+const path            = require('path');
+const favicon         = require('serve-favicon');
+const cookieParser    = require('cookie-parser');
+const bodyParser      = require('body-parser');
+const hbs             = require('express-hbs');
+const app = express();
+const PORT = parseInt(config.server.http.port);
 
 // view engine setup
 global.headerIncludes = "";
@@ -88,18 +87,23 @@ module.exports.init = function () {
     });
     //@todo trigger route setup hook
     // ***************************************************
-
+    //error handling
+    app.use(function(req, res, next) {
+        let err = new Error('Not Found');
+        err.status = 404;
+        next(err);
+    });
     app.use(logErrors);
     app.use(clientErrorHandler);
     app.use(errorHandler);
-
+    //start server
     isPortTaken(PORT, function(err, taken) {
         if (err) {
-            log(err);
+            log.error(err);
             return;
         }
         if (taken) {
-            log("port '" + PORT + "' is not free");
+            log.error("port '" + PORT + "' is not free");
             return;
         }
         app.listen(PORT, function () {

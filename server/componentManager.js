@@ -158,11 +158,17 @@ function createRelativePath(path){
 }
 function createAbsolutePath(relPath) {
     let a = config.server.http.staticDirs;
+    let result;
     for (let i = 0; i < a.length; i++){
         let b = Path.join(ROOT_PATH, a[i], relPath);
-        if (fs.existsSync(b)) return  b;
+        //@strange des geht nich, da läuft die schleife weiter :) trotz des return's
+        // if (fs.existsSync(b)) return  b;
+        if (fs.existsSync(b)) {
+            result = b;
+            break;
+        }
     }
-    return null;
+    return result;
 }
 /*endregion*/
 
@@ -228,7 +234,7 @@ function readModuleDirectory(name, path) {
                     html:    null,
                 });
             } else {
-                if (dir[i] == "component" || dir[i] == "components") {
+                if (dir[i] === "component" || dir[i] === "components") {
                     let relSubDir = subDir.replace(ROOT_PATH, "");
                     searchComponents(relSubDir);
                 }
@@ -238,7 +244,7 @@ function readModuleDirectory(name, path) {
 }
 function searchModules(relPath) {
     let path = createAbsolutePath(relPath);
-    if (path === null)throw new Error("Module path " +path+ " doesn't exist");
+    if (typeof path !== "string")throw new Error("Module path '" +path+ "' doesn't exist");
     let dir = fs.readdirSync(path);// array of filenames
     for (let i = 0; i < dir.length; i++) {
         if (dir[i] === "exampleWidget") continue; // skip example

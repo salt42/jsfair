@@ -3,13 +3,13 @@
 module.paths.push(__dirname + "/server");
 process.env.NODE_PATH = __dirname + "/server";
 require('module').Module._initPaths();
-
+process.stdout.setEncoding( 'utf8' );
 process.on('uncaughtException', function (err) {
     console.log(err);
 });
 /*endregion*/
 
-const DEV_MODE= (process.argv.indexOf('--dev') > -1)? true: false;
+const DEV_MODE= (process.argv.indexOf('--dev') > -1);
 const colors  = require('colors');
 const fs      = require("fs");
 const log     = require('jsfair/log')('main');

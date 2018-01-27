@@ -15,6 +15,11 @@
                 "name": "sections",
                 "js": "/jsfair/component/sections.js",
                 "css": ""
+            },
+            "test": {
+                "name": "test",
+                "js": "/jsfair/component/test.js",
+                "css": ""
             }
         },
         "modules": {

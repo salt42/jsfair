@@ -6,7 +6,8 @@ hookIn.http_createRoute("/", function(router) {
     /* GET home page. */
     router.get('/', function(req, res) {
         try {
-            res.render('index', {});
+            // res.send("sers");
+            res.render('layout', {});
         }catch (e) {
             console.log(e);
         }
