@@ -62,9 +62,6 @@ function runStatement(name, opt = {}, select = null) {
         statement = statement.replace((/  |\r\n|\n|\r/gm),"");
         statement = statement.replace(/!\w*/, function(a, b){
             a = a.substr(1);
-            log(a);
-            log(opt);
-            a = opt[a];
             return a;
         });
         let result = [];

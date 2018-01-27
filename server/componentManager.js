@@ -5,6 +5,8 @@ const log     = require('jsfair/log')("compManager".yellow);
 const fs      = require("fs");
 const Path    = require("path");
 
+let devMock = false;
+
 let items = {
     clientCoreModules: [],
     clientCoreComponents: [],
@@ -261,6 +263,17 @@ function searchModules(relPath) {
 
 log("Search Components");
 run();
+
+if(devMock) items = {
+        clientCoreModules:    mock("CCM",  "clientCoreModules:"   ),
+        clientCoreComponents: mock("CCC",  "clientCoreComponents:"),
+        clientPreScript:      mock("CPrS", "clientPreScript:"     ),
+        clientPreCss:         mock("CPrC", "clientPreCss:"        ),
+        clientComponents:     mock("CC",   "clientComponents:"    ),
+        clientModules:        mock("CM",   "clientModules:"       ),
+        clientPostCss:        mock("CPoC", "clientPostCss:"       ),
+        clientPostScript:     mock("CpoS", "clientPostScript:"    ),
+};
 log("Found Components, are they yours?");
 
 // hookIn.systemReady(() => {
@@ -271,14 +284,31 @@ function makeIterator(type, valueType) {
     return function* () {
         for(let i = 0; i < array.length; i++) {
             if (valueType) {
-                yield array[i++][valueType];
+                yield array[i][valueType];
             } else {
-                yield array[i++];
+                yield array[i];
             }
         }
     }();
 }
 
+/* region mocking */
+// function mock (type = "mock", name = "mocking", itemCount = 5) {
+//     let c = 1;
+//     let mockArray = [];
+//     for ( let i = 0; i < itemCount; i++){
+//         mockArray.push({
+//             type: type,
+//             name: type + ":-:" + name + c,
+//             js:   type + ":-:" + name + c + ".js",
+//             css:  type + ":-:" + name + (c++) + ".css"
+//         });
+//     }
+//     return mockArray;
+// }
+//
+// if (devMock) log("Componets mocked".red);
+/*endregion*/
 module.exports = {
     items: items,
     inactive: inactiveItems,
