@@ -51,7 +51,7 @@ function runStatement(name, opt = {}, select = null) {
         if (!parts[i]) continue;
         if (select && select.indexOf(i) > 0) continue;
 
-    //
+        let r = [];
         let func = parts[i].split(/\r?\n/)[0],   //.slice(0, parts[i].indexOf("\n")),
             statement = parts[i].slice(func.length)
                 .replace(/[\n\r]/g, " ")
@@ -60,20 +60,22 @@ function runStatement(name, opt = {}, select = null) {
 
         func = func.replace((/  |\r\n|\n|\r/gm),"");
         statement = statement.replace((/  |\r\n|\n|\r/gm),"");
-        statement = statement.replace(/!\w*/, function(a, b){
-            a = a.substr(1);
-            return a;
-        });
-        let result = [];
+
         try {
+            statement = statement.replace(/!\w*/, function(a, b){
+                a = a.substr(1);
+                if (!opt.hasOwnProperty(a)) throw("argument " + a + "missing");
+                return opt[a];
+            });
+
             let stm = DB.prepare(statement);
-            result = stm[func].call(stm, opt);
+            r = stm[func].call(stm, opt);
         }catch (e) {
             log.error("runStatement %s from %s.sql  '%s'", i, name, statement);
             log.error("statement variables: ", opt);
             console.log(e);
         }
-        result.push(result);
+        result.push(r);
     }
     return result;
 }
