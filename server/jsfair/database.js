@@ -59,7 +59,9 @@ function runStatement(name, opt = {}, select = null) {
                 .trim();
 
         func = func.replace((/  |\r\n|\n|\r/gm),"");
-        statement = statement.replace((/  |\r\n|\n|\r/gm),"");
+        statement = statement
+            .replace((/  |\r\n|\n|\r/gm)," ")
+            .replace((/  |\r\n|\n|\r/gm),"");
 
         try {
             statement = statement.replace(/!\w*/, function(a, b){
