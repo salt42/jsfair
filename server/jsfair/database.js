@@ -61,8 +61,9 @@ function runStatement(name, opt = {}, select = null) {
 
         func = func.replace((/  |\r\n|\n|\r/gm),"");
         statement = statement
-            .replace((/  |\r\n|\n|\r/gm)," ")
-            .replace((/  |\r\n|\n|\r/gm),"");
+            .replace((/  |\r\n|\n|\r/gm)," ");
+            // .replace((/  |\r\n|\n|\r/gm),"");
+
         try {
             statement = statement.replace(/!\w*/, function(a, b){
                 a = a.substr(1);
@@ -84,14 +85,10 @@ function runStatement(name, opt = {}, select = null) {
 }
 function init() {
     log.info("Init");
-    hook.trigger("db_prepare", DB);
-    // hook.getTrigger("db_addMethod", function(trigger, args) {
-    //     if (!args || !args[0]) {
-    //         log("ERROR: No method name provided");
-    //         return;
-    //     }
-    //     dbMethods[args[0]] = trigger(DB);
-    // });
+    // hook.trigger("db_onReady");
+    hook.getTrigger("db_onReady", function(trigger, args) {
+        trigger(DB);
+    });
     // hook.getTrigger("db_addObject", function(trigger, args) {
     //     if (!args || !args[0]) {
     //         log("ERROR: No object name provided");
