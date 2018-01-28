@@ -31,7 +31,6 @@ let inactiveItems = {
 function  run() {
     /* region create header tags pre section */
     let a;
-    debugger;
     a = config.client.coreModules;
     for (let coreItem in a){
         if (a.hasOwnProperty(coreItem) && a[coreItem] === true){

@@ -46,10 +46,11 @@ function getStatement(name) {
 function runStatement(name, opt = {}, select = null) {
     let statements = getStatement(name);
     let parts = statements.split("--#");
+    parts.splice(0, 1);
     let result = [];
     for(let i = 0; i < parts.length; i++) {
         if (!parts[i]) continue;
-        if (select && select.indexOf(i) > 0) continue;
+        if (select && select.indexOf(i) < 0) continue;
 
         let r = [];
         let func = parts[i].split(/\r?\n/)[0],   //.slice(0, parts[i].indexOf("\n")),
