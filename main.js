@@ -57,6 +57,7 @@ const conf = require('jsfair/config')(rootPath + "/conf.json");
 //dev mode
 if (DEV_MODE) {
     log.info("run in dev mode");
+    // log.info("\x1b[31m run in dev mode\x1b[0m");
     if (DEV_MODE_INSPECTOR) {
         let wait = process.argv.indexOf('--inspectWait') > -1;
         const inspector = require('inspector');

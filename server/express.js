@@ -76,9 +76,10 @@ module.exports.init = function () {
     hook.trigger("http_init", app);
     // ****************** routes *************************
     hook.getTrigger("http_createRoute", function(trigger, args) {
-        log("create router %s", args[0]);
+        log.info("create router %s", args[0]);
         if (!args || !args[0]) {
-            log("ERROR: No url defined");
+            log.error("No url defined in 'http_createRoute' hook");
+            console.trace();
             return;
         }
         let router = express.Router();
@@ -89,7 +90,8 @@ module.exports.init = function () {
     // ***************************************************
     //error handling
     app.use(function(req, res, next) {
-        let err = new Error('Not Found');
+        let url = req.protocol + '://' + req.get('host') + req.originalUrl;
+        let err = new Error("Url Not Found '"+ url +"'");
         err.status = 404;
         next(err);
     });
@@ -107,7 +109,7 @@ module.exports.init = function () {
             return;
         }
         app.listen(PORT, function () {
-            log('HTTP'.magenta + ' listening on port ' + PORT.toString().magenta);
+            log.info('HTTP'.magenta + ' listening on port ' + PORT.toString().magenta);
         });
     });
 };

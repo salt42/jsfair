@@ -31,7 +31,6 @@ let inactiveItems = {
 function  run() {
     /* region create header tags pre section */
     let a;
-    debugger;
     a = config.client.coreModules;
     for (let coreItem in a){
         if (a.hasOwnProperty(coreItem) && a[coreItem] === true){
@@ -190,7 +189,11 @@ function readCompDirectory(name, path) {
 }
 function searchComponents(relPath) {
     let path = createAbsolutePath(relPath);
-    if (path === null)throw new Error("Component path " +path+ " doesn't exist");
+    if (typeof path !== "string") {
+        log.error("can't find component path '%s' in static folders", relPath);
+        return null;
+        // throw new Error("Component path " +path+ " doesn't exist");
+    }
     let dir = fs.readdirSync(path);// Returns an array of filenames excluding '.' and '..'.
     for (let i = 0; i < dir.length; i++) {
         let fullPath = Path.join(path, dir[i]);
@@ -247,7 +250,11 @@ function readModuleDirectory(name, path) {
 }
 function searchModules(relPath) {
     let path = createAbsolutePath(relPath);
-    if (typeof path !== "string")throw new Error("Module path '" +path+ "' doesn't exist");
+    if (typeof path !== "string") {
+        log.error("can't find Module path '%s' in static folders", relPath);
+        return null;
+        // throw new Error("Module path '" +path+ "' doesn't exist");
+    }
     let dir = fs.readdirSync(path);// array of filenames
     for (let i = 0; i < dir.length; i++) {
         if (dir[i] === "exampleWidget") continue; // skip example

@@ -134,21 +134,22 @@ stdin.on( 'data', function( key ){
 
 function instantiateDevServer() {
     let args = ["--root", rootPath].concat(startArguments);
-    devInstance = fork(scriptPath, args, { stdio: 'inherit' });
+    // devInstance = fork(scriptPath, args, { stdio: 'inherit' });
+    devInstance = fork(scriptPath, args, { stdio: ['pipe', 'pipe', 'pipe', 'ipc'] });
     // devInstance = fork(scriptPath, ["--dev", "--root", rootPath], { stdio: ['pipe', 'pipe', 'pipe', 'ipc']  });
     // console.log(devInstance);
-    // devInstance.stdout.on("data", function(e) {
-    //     process.stderr.write(e);
-    // });
-    // devInstance.stderr.on("data", function(e) {
-    //     process.stderr.write(e);
-    // });
-    // devInstance.on('close', function(code, signal) {
-    //     // console.log('test.exe closed',code, signal);
-    // });
+    devInstance.stdout.on("data", function(e) {
+        process.stderr.write(e);
+    });
+    devInstance.stderr.on("data", function(e) {
+        process.stderr.write(e);
+    });
+    devInstance.on('close', function(code, signal) {
+        // console.log('test.exe closed',code, signal);
+    });
 }
 function killDevServer() {
-    devInstance.kill('SIGINT');
+    devInstance.kill('SIGTERM');
 }
 
 module.exports = function (_rootPath) {
