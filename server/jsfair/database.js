@@ -63,7 +63,6 @@ function runStatement(name, opt = {}, select = null) {
         statement = statement
             .replace((/  |\r\n|\n|\r/gm)," ")
             .replace((/  |\r\n|\n|\r/gm),"");
-
         try {
             statement = statement.replace(/!\w*/, function(a, b){
                 a = a.substr(1);
@@ -72,6 +71,7 @@ function runStatement(name, opt = {}, select = null) {
             });
 
             let stm = DB.prepare(statement);
+
             r = stm[func].call(stm, opt);
         }catch (e) {
             log.error("runStatement %s from %s.sql  '%s'", i, name, statement);
