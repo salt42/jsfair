@@ -1,6 +1,6 @@
 const WebSocket = require('ws');
 let wss;
-let port = 4221;
+let port = 4222;
 
 let isPortTaken = function(port, fn) {
     let net = require('net');

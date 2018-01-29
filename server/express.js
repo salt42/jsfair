@@ -57,12 +57,18 @@ let isPortTaken = function(port, fn) {
         .listen(port)
 };
 function logErrors(err, req, res, next) {
-    console.error(err.stack);
+    switch(err.status) {
+        case 404:
+            log.warn("404 ", err.message);
+            break;
+        default:
+            log.error(err.stack);
+    }
     next(err);
 }
 function clientErrorHandler(err, req, res, next) {
     if (req.xhr) {
-        res.status(500).send({ error: 'Something failed!' });
+        res.status((err.status)? err.status: 500 ).send({ error: err });
     } else {
         next(err);
     }
@@ -93,6 +99,7 @@ module.exports.init = function () {
         let url = req.protocol + '://' + req.get('host') + req.originalUrl;
         let err = new Error("Url Not Found '"+ url +"'");
         err.status = 404;
+        // res.send("Url Not Found '"+ url +"'");
         next(err);
     });
     app.use(logErrors);
