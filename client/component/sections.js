@@ -5,8 +5,13 @@
         this.get = (sectionName) => {
             return $('section#' + sectionName).data("context");
         };
-        this.load = (sectionName, compName) => {
-            return $('section#' + sectionName).getComponent().load(compName);
+        this.load = (sectionID, compName, args) => {
+            let $section = $('section#' + sectionID);
+            if ($section.length === 0) {
+                console.error("section with id '%s' not found!", sectionID);
+            }
+            let comp = $section.getComponent();
+            return comp.load(compName, args);
         };
     });
     defineComp("section", function (global, $element) {
@@ -26,7 +31,7 @@
         }
 
         this.onLoad = () => {};
-        this.load = (compName) => {
+        this.load = (compName, args) => {
             if (isStatic) {
                 console.warn("section '%s' is static", sectionID);
                 return;
@@ -38,7 +43,7 @@
             $element.append($comp);
             global.loadComponent($comp, (ctx) => {
 
-            });
+            }, args);
         };
         this.disableSection = () => {
             //

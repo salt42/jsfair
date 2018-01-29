@@ -117,11 +117,11 @@
         throw new Error(msg);
     };
 
-    global.loadComponent = function($element, fn) {
+    global.loadComponent = function($element, fn, args) {
         let compName = $element.prop("tagName").toLowerCase();
         loadComponent(compName, $element, (ctxArray) => {
             if (typeof fn === "function") fn(ctxArray[ctxArray.length - 1]);
-        });
+        }, args);
     };
     function initComponents(ctxArray) {
         // for(let i = 0; i < ctxArray.length; i++) {
@@ -151,7 +151,7 @@
 // });
         }
     }
-    function loadComponent(componentName, $element, fn) {
+    function loadComponent(componentName, $element, fn, args) {
         if ($element[0].isComponent ) {
             fn($element[0].getComponent());
             return;
@@ -169,7 +169,7 @@
         if (template) {
             getTemplate(template, (data) => {
                 $element.html(data).promise().done(function(){
-                    Components[componentName].init.call(ctx, global, $element);
+                    Components[componentName].init.call(ctx, global, $element, args);
                     loadAllComponents($element, function(ctxArray) {
                         ctxArray.push(ctx);
                         if(typeof fn === "function") fn(ctxArray);
@@ -182,7 +182,7 @@
                 });
             });
         } else{
-            Components[componentName].init.call(ctx, global, $element);
+            Components[componentName].init.call(ctx, global, $element, args);
             loadAllComponents($element, function(ctxArray) {
                 ctxArray.push(ctx);
                 if(typeof fn === "function") fn(ctx);
