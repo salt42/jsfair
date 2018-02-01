@@ -178,14 +178,26 @@ function createAbsolutePath(relPath) {
 function readCompDirectory(name, path) {
     let noExt = Path.join(path, name);
     let scriptPath = noExt + ".js";
-    if (!fs.existsSync(scriptPath)) throw new Error("Component path " +path+ " doesn't exist");
-    items.clientComponents.push({
-        type:    "client::common::component",
-        name:    name,
-        js:      createRelativePath(scriptPath),
-        css:     (fs.existsSync(noExt + ".css" )) ? createRelativePath(noExt + ".css")  : null,
-        html:    (fs.existsSync(noExt + ".html")) ? createRelativePath(noExt + ".html") : null,
-    });
+    let sp = fs.existsSync(scriptPath);
+    let sDir = fs.statSync(path).isDirectory();
+
+    if (!sp && !sDir) throw new Error("Component path " +path+ " doesn't exist");
+    if(sp){
+        items.clientComponents.push({
+            type:    "client::common::component",
+            name:    name,
+            js:      createRelativePath(scriptPath),
+            css:     (fs.existsSync(noExt + ".css" )) ? createRelativePath(noExt + ".css")  : null,
+            html:    (fs.existsSync(noExt + ".html")) ? createRelativePath(noExt + ".html") : null,
+        });
+    }
+    let subdir = fs.readdirSync(path);// Returns an array of filenames excluding '.' and '..'.
+    for ( let i = 0; i < subdir.length; i++){
+        let compSubDir = Path.join(path, subdir[i]);
+        if (fs.statSync(compSubDir).isDirectory()){
+            readCompDirectory(subdir[i], compSubDir)
+        }
+    }
 }
 function searchComponents(relPath) {
     let path = createAbsolutePath(relPath);
@@ -240,9 +252,9 @@ function readModuleDirectory(name, path) {
                     html:    null,
                 });
             } else {
+                log("comp dir = ", dir[i]);
                 if (dir[i] === "component" || dir[i] === "components") {
-                    let relSubDir = subDir.replace(ROOT_PATH, "");
-                    searchComponents(relSubDir);
+                    searchComponents(createRelativePath(subDir));
                 }
             }
         }
