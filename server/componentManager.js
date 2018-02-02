@@ -37,7 +37,7 @@ function  run() {
             items.clientCoreModules.push({
                 type:    "client::core::module",
                 name:    coreItem,
-                js:      core.client.components[coreItem].js,
+                js:      core.client.modules[coreItem].js,
                 css:     null,
                 html:    null,
             });
@@ -46,7 +46,7 @@ function  run() {
             inactiveItems.clientCoreModules.push({
                 type:    "client::core::module",
                 name:    coreItem,
-                js:      core.client.components[coreItem].js,
+                js:      core.client.modules[coreItem].js,
                 css:     null,
                 html:    null,
             });
