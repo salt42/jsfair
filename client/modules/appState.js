@@ -27,11 +27,10 @@ define("AppState", function(global){
 //     this.onAppStateChanged = new rx.fds();
 
 
-    this.onLoad = function(state) {
-        appStates = state;
+    this.onLoad = function() {
     };
-    this.setRoute = function() {
-
+    this.setRoute = function(state) {
+        appStates = state;
     };
     this.push = function(state) {
         history.pushState(state, state.name, state.url);
