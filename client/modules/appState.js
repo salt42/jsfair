@@ -27,8 +27,8 @@ define("AppState", function(global){
 //     this.onAppStateChanged = new rx.fds();
 
 
-    this.onLoad = function() {
-        //load current state
+    this.onLoad = function(state) {
+        appStates = state;
     };
     this.setRoute = function() {
 
