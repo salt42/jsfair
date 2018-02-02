@@ -119,6 +119,7 @@
 
     global.loadComponent = function($element, fn, args) {
         let compName = $element.prop("tagName").toLowerCase();
+        console.log($element);
         loadComponent(compName, $element, (ctxArray) => {
             if (typeof fn === "function") fn(ctxArray[ctxArray.length - 1]);
         }, args);
