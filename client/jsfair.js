@@ -15,6 +15,7 @@
     let Modules = {},
         Components = {},
         ComponentNames = [],
+        loadingCompsCtx = [],
         TemplateCache = {
             hash: [],
             templates: [],
@@ -112,7 +113,8 @@
         constructor(name) {
             this.name = name;
         }
-
+        //@overwrite
+        onLoad() {}
         observeAttributes(fn) {
 //todo
 // let observer = new MutationObserver(function(mutations) {

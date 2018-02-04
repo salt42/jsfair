@@ -3,7 +3,9 @@
 
     define("sections", function(global) {
         this.get = (sectionName) => {
-            return $('section#' + sectionName).data("context");
+            let sectionCtx = $('section#' + sectionName).data("context");
+            if (!sectionCtx) { console.warn("no section with this id"); }
+            return sectionCtx.getComponent();
         };
         this.load = (sectionID, compName, args) => {
             let $section = $('section#' + sectionID);
@@ -56,6 +58,10 @@
                 $element.append($loadendComp);
                 global.loadComponent($loadendComp, null, args);
             }
+        };
+        this.getComponent = () => {
+            if (!$loadedComp && !$loadedComp.length) return false;
+            return $loadedComp.getComponent();
         };
         this.disableSection = () => {
             //
