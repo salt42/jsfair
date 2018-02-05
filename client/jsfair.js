@@ -15,7 +15,6 @@
     let Modules = {},
         Components = {},
         ComponentNames = [],
-        loadingCompsCtx = [],
         TemplateCache = {
             hash: [],
             templates: [],
@@ -80,25 +79,15 @@
     global.onModulesLoaded = new Rx.Subject();
     global.onPageLoaded = new Rx.Subject();
     global.onComponentLoaded = new Rx.Subject();
-
+    global.loadSubComponents = ($ele) => {
+        return loadSubComps($ele[0])
+    };
     global.getActiveComponent = function(sectionName) {
         let $section = $('section[name="'+ sectionName +'"]');
         if ($section.length < 0) {
             throw new Error("section with name '"+ sectionName+"' not found");
         }
         return $section.data("context");
-    };
-    global.initUI = function($element) {
-        console.trace();
-        throw("initUI is deprecated");
-    };
-    global.initAllUI = function($parent) {
-        console.trace();
-        throw("initAllUI is deprecated -> use initUI");
-    };
-    global.initUIin = function($parent) {
-        console.trace();
-        throw("initAllUI is deprecated -> use initUI");
     };
 
     //@todo overwriteable error functions    think through
@@ -110,7 +99,7 @@
     };
 
     global.loadComponent = function($element, fn, args) {
-        let a = loadComp($element[0]);
+        let a = loadComp($element[0], args);
         a.then(function() {
             if (typeof fn === "function") fn();
         }, function () {
@@ -143,6 +132,7 @@
         for (let i = 0; i < ele.childNodes.length; i++) {
             let tagName = ele.childNodes[i].tagName;
             if (!tagName) continue;
+            // console.log("search comp:", tagName);
             tagName = tagName.toLowerCase();
             //check if comp
             if (Components.hasOwnProperty(tagName)) {
@@ -155,7 +145,7 @@
         }
         return Promise.all(promises);
     }
-    function loadComp(ele) {
+    function loadComp(ele, args) {
         return new Promise(
             function(resolve, reject) {
                 let componentName = ele.tagName.toLowerCase();
@@ -185,8 +175,10 @@
                         // ele.addEventListener('DOMContentLoaded', function() {
                         //     fn();
                         // });
+                        //@todo move html injection to getTemplate and place the html in a template tag.
+
                         $(ele).html(data).promise().done(function(){
-                            Components[componentName].init.call(ctx, global, $(ele));
+                            Components[componentName].init.call(ctx, global, $(ele), args);
                             loadSubComps(ele).then(() => {
                                 if (ctx.hasOwnProperty("onLoad") && typeof ctx.onLoad === "function") {
                                     ctx.onLoad();
@@ -197,7 +189,7 @@
                         });
                     });
                 } else {
-                    Components[componentName].init.call(ctx, global, $(ele));
+                    Components[componentName].init.call(ctx, global, $(ele), args);
                     loadSubComps(ele).then(() => {
                         if (ctx.hasOwnProperty("onLoad") && typeof ctx.onLoad === "function") {
                             ctx.onLoad();
