@@ -57,16 +57,6 @@
 
         Components[compName] = compMeta;
     };
-    //defines a UI module
-    window.defineUI = function(uiName, initMethod) {
-        //@todo deprecated
-        console.trace();
-        throw("defineUI is deprecated");
-        // if(UIModules.hasOwnProperty(uiName)) {
-        //     console.error("UI Module name '"+ uiName +"' already taken");
-        // }
-        // UIModules[uiName] = initMethod;
-    };
 
     function getTemplate(templatePath, fn) {
         if (TemplateCache.has(templatePath)) {
@@ -87,6 +77,8 @@
     }
 
     /* GLOBAL */
+    global.onModulesLoaded = new Rx.Subject();
+    global.onPageLoaded = new Rx.Subject();
     global.onComponentLoaded = new Rx.Subject();
 
     global.getActiveComponent = function(sectionName) {
@@ -118,20 +110,14 @@
     };
 
     global.loadComponent = function($element, fn, args) {
-        let compName = $element.prop("tagName").toLowerCase();
-        console.log($element);
-        loadComponent(compName, $element, (ctxArray) => {
-            if (typeof fn === "function") fn(ctxArray[ctxArray.length - 1]);
-        }, args);
+        let a = loadComp($element[0]);
+        a.then(function() {
+            if (typeof fn === "function") fn();
+        }, function () {
+            console.error("Component loading error!");
+            console.trace();
+        })
     };
-    function initComponents(ctxArray) {
-        // for(let i = 0; i < ctxArray.length; i++) {
-        //     let compCtx = ctxArray[i];
-        //     if (compCtx.hasOwnProperty("onLoad") && typeof compCtx.onLoad === "function") {
-        //         compCtx.onLoad();
-        //     }
-        // }
-    }
 
     class Component {
         constructor(name) {
@@ -152,69 +138,76 @@
 // });
         }
     }
-    function loadComponent(componentName, $element, fn, args) {
-        if ($element[0].isComponent ) {
-            fn($element[0].getComponent());
-            return;
+    function loadSubComps(ele) {
+        let promises = [];
+        for (let i = 0; i < ele.childNodes.length; i++) {
+            let tagName = ele.childNodes[i].tagName;
+            if (!tagName) continue;
+            tagName = tagName.toLowerCase();
+            //check if comp
+            if (Components.hasOwnProperty(tagName)) {
+                //load comp
+                promises.push(loadComp(ele.childNodes[i]) );
+            } else {
+                //recursive step into
+                promises.push(loadSubComps(ele.childNodes[i]) );
+            }
         }
-        let template = false;
-        if (typeof Components[componentName] === "object" && Components[componentName].hasOwnProperty("templatePath")) {
-            template = Components[componentName].templatePath;
-        }
-        let ctx = new Component(componentName);
-        // $element.data("context", ctx);
-        $element[0].isComponent = true;
-        $element[0].getComponent = () => {
-            return ctx;
-        };
-        if (template) {
-            getTemplate(template, (data) => {
-                $element.html(data).promise().done(function(){
-                    Components[componentName].init.call(ctx, global, $element, args);
-                    loadAllComponents($element, function(ctxArray) {
-                        ctxArray.push(ctx);
-                        if(typeof fn === "function") fn(ctxArray);
+        return Promise.all(promises);
+    }
+    function loadComp(ele) {
+        return new Promise(
+            function(resolve, reject) {
+                let componentName = ele.tagName.toLowerCase();
+                // console.log("load comp:", componentName);
+                componentName = componentName.toLowerCase();
+                if (ele.isComponent ) {
+                    resolve();
+                    return;
+                }
+                if (!Components.hasOwnProperty(componentName)) {
+                    console.error("no component with name '%s'", componentName);
+                    resolve();
+                }
+                let template = false;
 
+                if (typeof Components[componentName] === "object" && Components[componentName].hasOwnProperty("templatePath")) {
+                    template = Components[componentName].templatePath;
+                }
+                let ctx = new Component(componentName);
+                // $element.data("context", ctx);
+                ele.isComponent = true;
+                ele.getComponent = () => {
+                    return ctx;
+                };
+                if (template) {
+                    getTemplate(template, (data) => {
+                        // ele.addEventListener('DOMContentLoaded', function() {
+                        //     fn();
+                        // });
+                        $(ele).html(data).promise().done(function(){
+                            Components[componentName].init.call(ctx, global, $(ele));
+                            loadSubComps(ele).then(() => {
+                                if (ctx.hasOwnProperty("onLoad") && typeof ctx.onLoad === "function") {
+                                    ctx.onLoad();
+                                }
+                                //global.onComponentLoaded.next(componentName);
+                                resolve();
+                            });
+                        });
+                    });
+                } else {
+                    Components[componentName].init.call(ctx, global, $(ele));
+                    loadSubComps(ele).then(() => {
                         if (ctx.hasOwnProperty("onLoad") && typeof ctx.onLoad === "function") {
                             ctx.onLoad();
                         }
-                        global.onComponentLoaded.next(componentName);
+                    //global.onComponentLoaded.next(componentName);
+                        resolve();
                     });
-                });
-            });
-        } else{
-            Components[componentName].init.call(ctx, global, $element, args);
-            loadAllComponents($element, function(ctxArray) {
-                ctxArray.push(ctx);
-                if(typeof fn === "function") fn(ctx);
-                if (ctx.hasOwnProperty("onLoad") && typeof ctx.onLoad === "function") {
-                    ctx.onLoad();
-                }
-                global.onComponentLoaded.next(componentName);
-            });
-        }
-    }
-    function loadAllComponents($container, fn) {
-        let count = 0;
-        let ctxArray = [];
-
-        $(ComponentNames.join(", "), $container).each(function(index, value) {
-            let compName = value.tagName.toLowerCase();
-            count++;
-            loadComponent(compName, $(value), (ctx) => {
-                count--;
-                ctxArray.push(ctx);
-                if (count < 1) {
-                    fn(ctxArray);
                 }
             });
-        });
-        // count--;
-        if (count < 1) {
-            fn(ctxArray);
-        }
     }
-
     window.onload = function() {
         //init modules
         for(let module in Modules) {
@@ -223,9 +216,14 @@
             Modules[module].call(context, global);
             global[module] = context;
         }
+        global.onModulesLoaded.next();
         // load components
-        loadAllComponents($("body"), function(ctxArray) {
-            //@todo
-        });
+        let a = loadSubComps($("body")[0]);
+
+        a.then(function() {
+            // console.log("page loaded");
+        }, function () {
+            // console.log("loading error"); //solte eigentlich nicht vorkommen
+        })
     };
 })();
