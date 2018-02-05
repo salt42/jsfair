@@ -18,6 +18,9 @@
         let sectionID = $element.attr("id");
         let isStatic = !!$element.attr("static");
         let _compName = $element.attr("static") || $element.attr("default");
+        let $loadendComp;
+        let persistentComps = new Map();
+        let persistent = !!$element.attr("persistent");
 
         if (!sectionID || sectionID === "") {
             console.log($element);
@@ -36,14 +39,23 @@
                 console.warn("section '%s' is static", sectionID);
                 return;
             }
-            //@todo unload current comp
+            if (persistent && $loadendComp) {
+                $loadendComp.detach();
+            } else {
+                $element.empty();
+            }
             _compName = compName;
-            $element.empty();
-            let $comp = $("<" + compName + ">");
-            $element.append($comp);
-            global.loadComponent($comp, (ctx) => {
-
-            }, args);
+            let $comp;
+            if (persistent && persistentComps.has(compName)) {
+                //laode this one
+                $loadendComp = persistentComps.get(compName);
+                $element.append($loadendComp);
+            } else {
+                $loadendComp = $("<" + compName + ">");
+                if (persistent) persistentComps.set(compName, $loadendComp);
+                $element.append($loadendComp);
+                global.loadComponent($loadendComp, null, args);
+            }
         };
         this.disableSection = () => {
             //
