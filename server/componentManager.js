@@ -188,7 +188,7 @@ function readCompDirectory(name, path) {
             name:    name,
             js:      createRelativePath(scriptPath),
             css:     (fs.existsSync(noExt + ".css" )) ? createRelativePath(noExt + ".css")  : null,
-            html:    (fs.existsSync(noExt + ".html")) ? createRelativePath(noExt + ".html") : null,
+            html:    (fs.existsSync(noExt + ".html")) ? (noExt + ".html") : null,
         });
     }
     let subdir = fs.readdirSync(path);// Returns an array of filenames excluding '.' and '..'.
@@ -210,8 +210,9 @@ function searchComponents(relPath) {
     for (let i = 0; i < dir.length; i++) {
         let fullPath = Path.join(path, dir[i]);
         if (fs.statSync(fullPath).isDirectory()){
-            readCompDirectory(dir[i], fullPath);
+                readCompDirectory(dir[i], fullPath);
         } else {
+            // get components in main comp path (no css or html -> otherwise put in folder)
             items.clientComponents.push({
                 type:    "client::common::component",
                 name:    Path.basename(fullPath, ".js"),
@@ -252,7 +253,6 @@ function readModuleDirectory(name, path) {
                     html:    null,
                 });
             } else {
-                log("comp dir = ", dir[i]);
                 if (dir[i] === "component" || dir[i] === "components") {
                     searchComponents(createRelativePath(subDir));
                 }
@@ -269,7 +269,6 @@ function searchModules(relPath) {
     }
     let dir = fs.readdirSync(path);// array of filenames
     for (let i = 0; i < dir.length; i++) {
-        if (dir[i] === "exampleWidget") continue; // skip example
         let fullPath = Path.join(path, dir[i]);
         if (!fs.statSync(fullPath).isDirectory() && Path.extname(fullPath) === ".js" ){
             //module name

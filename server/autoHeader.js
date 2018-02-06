@@ -1,8 +1,11 @@
 "use strict";
-var config  = require('jsfair/config');
-var log     = require('jsfair/log')("autoHeader".yellow);
+const fs    = require('fs');
+let config  = require('jsfair/config');
+let log     = require('jsfair/log')("autoHeader".yellow);
 let compMan = require('./componentManager');
 let tagEnd = '\r\n\t\t';
+
+let templates ="";
 
 
 // config.registerConfig({
@@ -16,45 +19,58 @@ hookIn.http_init(function(app) {
 
     for (let comp of compMan.getIterator("clientCoreModules")) {
         global.headerIncludes += createScriptTag(comp.js);
-        global.headerIncludes += createCssTag(comp.css);
     }
     for (let comp of compMan.getIterator("clientCoreComponents")) {
         global.headerIncludes += createScriptTag(comp.js);
         global.headerIncludes += createCssTag(comp.css);
+        templates += createHTMLTag(comp.html, comp.name);
     }
     for (let comp of compMan.getIterator("clientPreCss")) {
-        global.headerIncludes += createScriptTag(comp.js);
         global.headerIncludes += createCssTag(comp.css);
     }
     for (let comp of compMan.getIterator("clientPreScript")) {
         global.headerIncludes += createScriptTag(comp.js);
-        global.headerIncludes += createCssTag(comp.css);
     }
     for (let comp of compMan.getIterator("clientModules")) {
         global.headerIncludes += createScriptTag(comp.js);
-        global.headerIncludes += createCssTag(comp.css);
     }
     for (let comp of compMan.getIterator("clientComponents")) {
         global.headerIncludes += createScriptTag(comp.js);
         global.headerIncludes += createCssTag(comp.css);
+        templates += createHTMLTag(comp.html, comp.name);
     }
     for (let comp of compMan.getIterator("clientPostCss")) {
-        global.headerIncludes += createScriptTag(comp.js);
         global.headerIncludes += createCssTag(comp.css);
     }
     for (let comp of compMan.getIterator("clientPostScript")) {
         global.headerIncludes += createScriptTag(comp.js);
-        global.headerIncludes += createCssTag(comp.css);
     }
+    global.headerIncludes += templates;
     log("Knitted your Header");
 });
 /* region auxiliaries */
 function createScriptTag(path) {
-    let incPath = (path === null) ? null : path;
-    return (incPath === null) ? "" : '<script src="' + incPath + '"></script>'+ tagEnd;
+    return (path === null) ? "" : '<script src="' + path + '"></script>'+ tagEnd;
 }
 function createCssTag(path) {
-    let incPath = (path === null) ? null : path;
-    return (incPath === null) ? "" : '<link href="' + incPath + '" rel="stylesheet">' + tagEnd;
+    return (path === null) ? "" : '<link href="' + path + '" rel="stylesheet">' + tagEnd;
+}
+function createHTMLTag(path, name) {
+    if (path === null) return "";
+    let html =  fs.readFileSync(path,'utf8');
+    let compName = camelToDash(name);
+    return '<template id="template-' + compName + '-main">' + html + '</template>' + tagEnd;
+}
+
+function camelToDash(str) {
+    str = str.replace(/\W+/g, '-')
+        .replace(/([a-z\d])([A-Z])/g, '$1-$2');
+    return str.toLowerCase();
+}
+
+function dashToCamel(str) {
+    return str.replace(/\W+(.)/g, function (x, chr) {
+        return chr.toUpperCase();
+    })
 }
 /*endregion*/
