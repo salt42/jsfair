@@ -4,7 +4,11 @@
     define("sections", function(global) {
         this.get = (sectionName) => {
             let sectionCtx = $('section#' + sectionName).data("context");
-            if (!sectionCtx) { console.warn("no section with this id"); }
+            console.log(sectionCtx, sectionName);
+            if (!sectionCtx) {
+                console.warn("no section with this id");
+                return false;
+            }
             return sectionCtx.getComponent();
         };
         this.load = (sectionID, compName, args) => {
@@ -20,7 +24,7 @@
         let sectionID = $element.attr("id");
         let isStatic = !!$element.attr("static");
         let _compName = $element.attr("static") || $element.attr("default");
-        let $loadendComp;
+        let $loadedComp;
         let persistentComps = new Map();
         let persistent = !!$element.attr("persistent");
 
@@ -37,12 +41,13 @@
 
         this.onLoad = () => {};
         this.load = (compName, args) => {
+            //@todo check if comp exists
             if (isStatic) {
                 console.warn("section '%s' is static", sectionID);
                 return;
             }
-            if (persistent && $loadendComp) {
-                $loadendComp.detach();
+            if (persistent && $loadedComp) {
+                $loadedComp.detach();
             } else {
                 $element.empty();
             }
@@ -50,13 +55,13 @@
             let $comp;
             if (persistent && persistentComps.has(compName)) {
                 //laode this one
-                $loadendComp = persistentComps.get(compName);
-                $element.append($loadendComp);
+                $loadedComp = persistentComps.get(compName);
+                $element.append($loadedComp);
             } else {
-                $loadendComp = $("<" + compName + ">");
-                if (persistent) persistentComps.set(compName, $loadendComp);
-                $element.append($loadendComp);
-                global.loadComponent($loadendComp, null, args);
+                $loadedComp = $("<" + compName + ">");
+                if (persistent) persistentComps.set(compName, $loadedComp);
+                $element.append($loadedComp);
+                global.loadComponent($loadedComp, null, args);
             }
         };
         this.getComponent = () => {

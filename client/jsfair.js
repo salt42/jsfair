@@ -167,7 +167,8 @@
                     template = Components[componentName].templatePath;
                 }
                 let ctx = new Component(componentName);
-                // $element.data("context", ctx);
+                $(ele).data("context", ctx);
+                // ele.context = ctx;
                 ele.isComponent = true;
                 ele.getComponent = () => {
                     return ctx;
