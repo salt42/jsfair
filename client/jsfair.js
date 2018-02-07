@@ -102,6 +102,7 @@
     global.loadComponent = function($element, fn, args) {
         let a = loadComp($element[0], args);
         a.then(function() {
+            console.log("load: ", $element[0].tagName, fn);
             if (typeof fn === "function") fn();
         }, function () {
             console.error("Component loading error!");

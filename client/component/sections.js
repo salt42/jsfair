@@ -11,13 +11,17 @@
             }
             return sectionCtx.getComponent();
         };
-        this.load = (sectionID, compName, args) => {
+        this.load = (sectionID, compName, args, fn) => {
+            if(typeof args === "function"){
+                fn = args;
+                args = null;
+            }
             let $section = $('section#' + sectionID);
             if ($section.length === 0) {
                 console.error("section with id '%s' not found!", sectionID);
             }
             let comp = $section.getComponent();
-            return comp.load(compName, args);
+            return comp.load(compName, args, fn);
         };
     });
     defineComp("section", function (global, $element) {
@@ -32,7 +36,7 @@
             console.log($element);
             throw new Error("section need id!");
         }
-
+        //was schade ist is das ich keinen weg gefunden hab eigene templates anzulegen
         if (_compName) {
             //load default or static comp
             let $comp = $("<" + _compName + ">");
@@ -40,7 +44,11 @@
         }
 
         this.onLoad = () => {};
-        this.load = (compName, args) => {
+        this.load = (compName, args, fn) => {
+            if(typeof args === "function"){
+                fn = args;
+                args = null;
+            }
             //@todo check if comp exists
             if (isStatic) {
                 console.warn("section '%s' is static", sectionID);
@@ -52,7 +60,6 @@
                 $element.empty();
             }
             _compName = compName;
-            let $comp;
             if (persistent && persistentComps.has(compName)) {
                 //laode this one
                 $loadedComp = persistentComps.get(compName);
@@ -61,7 +68,7 @@
                 $loadedComp = $("<" + compName + ">");
                 if (persistent) persistentComps.set(compName, $loadedComp);
                 $element.append($loadedComp);
-                global.loadComponent($loadedComp, null, args);
+                global.loadComponent($loadedComp, fn, args);
             }
         };
         this.getComponent = () => {
