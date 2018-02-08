@@ -58,7 +58,15 @@
         Components[compName] = compMeta;
     };
 
-    function getTemplate(templatePath, fn) {
+    function getTemplate(componentName, templatePath, fn) {
+        let template = document.head.querySelector("#template-" + componentName + "-main");
+        if (template) {
+            let ele = document.importNode(template.content, true);
+            fn(ele)
+        } else {
+            fn();
+        }
+        return;
         if (TemplateCache.has(templatePath)) {
             fn(TemplateCache.get(templatePath));
         } else {
@@ -102,7 +110,6 @@
     global.loadComponent = function($element, fn, args) {
         let a = loadComp($element[0], args);
         a.then(function() {
-            console.log("load: ", $element[0].tagName, fn);
             if (typeof fn === "function") fn();
         }, function () {
             console.error("Component loading error!");
@@ -175,13 +182,12 @@
                     return ctx;
                 };
                 if (template) {
-                    getTemplate(template, (data) => {
+                    getTemplate(componentName, template, (template) => {
                         // ele.addEventListener('DOMContentLoaded', function() {
                         //     fn();
                         // });
                         //@todo move html injection to getTemplate and place the html in a template tag.
-
-                        $(ele).html(data).promise().done(function(){
+                        if (!template) {
                             Components[componentName].init.call(ctx, global, $(ele), args);
                             loadSubComps(ele).then(() => {
                                 if (ctx.hasOwnProperty("onLoad") && typeof ctx.onLoad === "function") {
@@ -190,7 +196,17 @@
                                 //global.onComponentLoaded.next(componentName);
                                 resolve();
                             });
-                        });
+                        } else {
+                            Components[componentName].init.call(ctx, global, $(template), args);
+                            $(ele).append(template);
+                            loadSubComps(ele).then(() => {
+                                if (ctx.hasOwnProperty("onLoad") && typeof ctx.onLoad === "function") {
+                                    ctx.onLoad();
+                                }
+                                //global.onComponentLoaded.next(componentName);
+                                resolve();
+                            });
+                        }
                     });
                 } else {
                     Components[componentName].init.call(ctx, global, $(ele), args);
@@ -198,7 +214,7 @@
                         if (ctx.hasOwnProperty("onLoad") && typeof ctx.onLoad === "function") {
                             ctx.onLoad();
                         }
-                    //global.onComponentLoaded.next(componentName);
+                        //global.onComponentLoaded.next(componentName);
                         resolve();
                     });
                 }
@@ -214,9 +230,11 @@
         }
         global.onModulesLoaded.next();
         // load components
+        console.time("load")
         let a = loadSubComps($("body")[0]);
 
         a.then(function() {
+            console.timeEnd("load")
             // console.log("page loaded");
         }, function () {
             // console.log("loading error"); //solte eigentlich nicht vorkommen

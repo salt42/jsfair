@@ -4,7 +4,6 @@
     define("sections", function(global) {
         this.get = (sectionName) => {
             let sectionCtx = $('section#' + sectionName).data("context");
-            console.log(sectionCtx, sectionName);
             if (!sectionCtx) {
                 console.warn("no section with this id");
                 return false;
