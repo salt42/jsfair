@@ -23,7 +23,7 @@ define("AppState", function(global) {
             ]
         },
     ];
-    this.onAppStateChanged = new Rx.Subject();
+    this.onAppStateChanged = new Rx.ReplaySubject();
 
     global.onModulesLoaded.subscribe(() => {
         if (!global.hasOwnProperty("sections")) {
@@ -51,7 +51,7 @@ define("AppState", function(global) {
     this.push = function(state) {
         history.pushState(state, state.name, state.url);
     };
-    this.goToState = function (stateName) {
+    this.goToState = function (stateName, data = null) {
         let state;
         for (let i = 0; i < appStates.length; i++) {
             if (appStates[i].name === stateName) {
@@ -66,6 +66,7 @@ define("AppState", function(global) {
             if (!section) continue; //@todo error
             section.load(state.sections[i][1]);
         }
+        onAppStateChanged.next();
     };
     this.goToUrl = function (url) {
         let targetState = null;
