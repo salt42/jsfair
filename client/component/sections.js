@@ -53,11 +53,10 @@
                 fn = args;
                 args = null;
             }
-            //@todo check if comp exists
-            if (isStatic) {
-                console.warn("section '%s' is static", sectionID);
-                return;
+            if (_compName === compName) {
+                fn();
             }
+            //@todo check if comp exists
             if (persistent && $loadedComp) {
                 $loadedComp.detach();
             } else {
@@ -82,12 +81,6 @@
         this.disableSection = () => {
             //
         }
-        // this.componentType = () => {
-        //     return
-        // };
-        // this.getComponent = () => {
-        //     return
-        // };
 
     }, {});
 })();

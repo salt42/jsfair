@@ -122,6 +122,8 @@
     class Component {
         constructor(name) {
             this.name = name;
+            this.$ele = null;
+            this.template = null;
         }
         //@overwrite
         onLoad() {}
@@ -177,6 +179,7 @@
                     template = Components[componentName].templatePath;
                 }
                 let ctx = new Component(componentName);
+                ctx.$ele = $(ele);
                 $(ele).data("context", ctx);
                 // ele.context = ctx;
                 ele.isComponent = true;
@@ -185,6 +188,7 @@
                 };
                 if (template) {
                     getTemplate(componentName, template, (template) => {
+                        ctx.template = template;
                         // ele.addEventListener('DOMContentLoaded', function() {
                         //     fn();
                         // });
@@ -203,7 +207,7 @@
                             $(ele).append(template);
                             loadSubComps(ele).then(() => {
                                 if (ctx.hasOwnProperty("onLoad") && typeof ctx.onLoad === "function") {
-                                    ctx.onLoad();
+                                    ctx.onLoad($(ele));
                                 }
                                 //global.onComponentLoaded.next(componentName);
                                 resolve();
