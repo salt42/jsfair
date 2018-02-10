@@ -19,19 +19,49 @@ defineComp("a", function(global, $ele, args) {
 });
 define("AppState", function(global) {
     "use strict";
+    let onAppStateChanged = new Rx.ReplaySubject();
+    let debug = false;
+    let self = this;
     let appStates = [
         {
-            name: "home",
-            url: "/",
+            name: "aaaa",
+            url: "/sub/:ff",
             sections: [
-                // ["SECTION_ID", "COMPONENT_ID"]
+                // ["SECTION_ID", "jsonform"]
             ]
+        },
+        {
+            name: "behandlung",
+            url: "/d/",
+            sections: [
+                ["main-content", "sidebar"]
+            ],
+            sub: [{
+                name: "testRoute",
+                url: "test/:aa/",
+                sections: [
+                    ["section-sidebar-top", "search"]
+                ],
+                sub: [{
+                    name: "subsubRoute",
+                    url: "sub/:ff",
+                    sections: [
+                        // ["SECTION_ID", "jsonform"]
+                    ]
+                },{
+                    name: "dsadsa",
+                    url: "test/:aa/",
+                    sections: [
+                        ["section-sidebar-top", "search"]
+                    ],
+                    sub: []
+                }]
+            }]
         },
     ];
     this.onAppStateChanged = new Rx.ReplaySubject();
 
     global.onPageLoaded.subscribe(function() {
-        console.log("modules loaded");
         if (!global.hasOwnProperty("sections")) {
             console.error("AppState has dependecies to section component");
             return;
@@ -42,19 +72,9 @@ define("AppState", function(global) {
         }
         //push init state
         let startUrl = location.href.slice(location.href.indexOf(location.host) + location.host.length);
-        this.goToUrl(startUrl);
-        // let state;
-        // for(let i = 0; i < appStates.length; i++) {
-        //     if (appStates[i].url === startUrl) {
-        //         state = appStates[i];
-        //         break;
-        //     }
-        // }
-        // if (state) {
-        //     this.push(state);
-        // }
+        // this.goToUrl(startUrl);
+        this.goToUrl("/d/test/5423/test/42/");
     }.bind(this));
-
     this.push = function(state) {
         history.pushState(state, state.name, state.url);
     };
@@ -75,8 +95,6 @@ define("AppState", function(global) {
         }
         onAppStateChanged.next();
     };
-
-
     window.onpopstate = function(event) {
         //load comps
         console.log(event);
@@ -87,51 +105,81 @@ define("AppState", function(global) {
         }
     }.bind(this);
 
+    function match(url, states, fn, _result = []) {
+        for (let i = 0; i < states.length; i++) {
+            let state = states[i];
+            let keys = [];
 
-    this.goToUrl = function (url) {
-        console.log(url);
-        let targetState = null;
+            let re = pathToRegexp(state.url, keys, {
+                end: false,
+                // strict: true
+            });
+            if (debug) console.log("try match: '%s'  ON  '%s' ", state.url, url);
+            let r = re.exec(url);
 
-        for (let i = 0; i < appStates.length; i++) {
-            if (typeof appStates[i].url === "string") {
-                let keys = [];
-                let re = pathToRegexp(appStates[i].url, keys);
-                re = re.exec(url);
-                if (re) {
-                    targetState = Object.assign({}, appStates[i] );
-                    targetState.args = {};
-                    for (let j = 1; j < re.length; j++) {
-                        targetState.args[keys[j - 1].name] = re[j];
-                    }
-
-                    break;
+            if(r) {
+                if (debug) console.log("matched: ", url, state);
+                let args = {};
+                for (let k = 0; k < keys.length; k++) {
+                    args[keys[k].name] = r[k + 1];
                 }
-            } else if (typeof appStates[i].url === "object") {
-            } else if (typeof appStates[i].url === "function") {
-            }
-        }
-        if (!targetState) {
-            console.error("can't resolve url '%s'", url);
-            return;
-        }
-        //load comps from targetState
-        let wait = [];
-        for (let i = 0; i < targetState.section.length; i++) {
-            let section = $("#" + targetState.section[i][0]).getComponent();
-            if (!section) {
-                console.error("error loading section '%s'", targetState.section[i][0]);
+                let stateEvent = {
+                    name: state.name,
+                    args: args,
+                };
+                _result.push(stateEvent);
+                /*load comps*/
+                if(state.sections) {
+                    if (debug) console.log("load sections: ", state.sections);
+                    let wait = [];
+                    for (let i = 0; i < state.sections.length; i++) {
+                        $("section#" + state.sections[i][0])
+                            .each((index, $section) => {
+                                let section = $section.getComponent();
+                                if (!section) {
+                                    console.error("error loading section '%s'", state.sections[i][0]);
+                                } else {
+                                    let promise = section.load(state.sections[i][1]);
+                                    wait.push(promise);
+                                }
+                            });
+                    }
+                    Promise.all(wait).then(function () {
+                        self.onAppStateChanged.next(stateEvent);
+                        if(state.sub) {
+                            if (debug) console.log("match subs");
+                            url = url.replace(r[0], "");
+                            match(url, state.sub, fn, _result);
+                        }
+                    }.bind(this));
+                    return;
+                } else {
+                    self.onAppStateChanged.next(stateEvent);
+                    if(state.sub) {
+                        if (debug) console.log("match subs");
+                        url = url.replace(r[0], "");
+                        match(url, state.sub, fn, _result);
+                    }
+                    return;
+                }
             } else {
-                console.log(targetState.section[i][1]);
-                let promise = section.load(targetState.section[i][1]);
-                wait.push(promise);
+                if (debug) console.log("faild matching: ", url, state);
             }
         }
-        Promise.all(wait).then(function() {
-            console.log(targetState);//ich glaub aber leider das des wtwas komplizierter wird den auf childs umzubauen  push den mal so ich mach des
+        if (debug) console.log("matching completed");
+        if (typeof fn === "function") fn(_result);
+    }
+    this.setDebug = (val) => {
+        debug = val;
+    };
+    // this.onAppStateChanged.subscribe((e) => {
+    //     console.log(e)
+    // });
+    this.goToUrl = function (url) {
+        match(url, appStates, (state) => {
         });
-        //fire event
-        this.onAppStateChanged.next(targetState);
     }.bind(this);
+
 
 
 
