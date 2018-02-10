@@ -72,8 +72,7 @@ define("AppState", function(global) {
         }
         //push init state
         let startUrl = location.href.slice(location.href.indexOf(location.host) + location.host.length);
-        // this.goToUrl(startUrl);
-        this.goToUrl("/d/test/5423/test/42/");
+        this.goToUrl(startUrl);
     }.bind(this));
     this.push = function(state) {
         history.pushState(state, state.name, state.url);
@@ -172,9 +171,9 @@ define("AppState", function(global) {
     this.setDebug = (val) => {
         debug = val;
     };
-    // this.onAppStateChanged.subscribe((e) => {
-    //     console.log(e)
-    // });
+    this.onAppStateChanged.subscribe((e) => {
+        console.log(e)
+    });
     this.goToUrl = function (url) {
         match(url, appStates, (state) => {
         });
