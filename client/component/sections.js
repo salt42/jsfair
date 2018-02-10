@@ -11,16 +11,21 @@
             return sectionCtx.getComponent();
         };
         this.load = (sectionID, compName, args, fn) => {
-            if(typeof args === "function"){
-                fn = args;
-                args = null;
-            }
-            let $section = $('section#' + sectionID);
-            if ($section.length === 0) {
-                console.error("section with id '%s' not found!", sectionID);
-            }
-            let comp = $section.getComponent();
-            return comp.load(compName, args, fn);
+            return new Promise(function(resolve, reject) {
+                if(typeof args === "function"){
+                    fn = args;
+                    args = null;
+                }
+                let $section = $('section#' + sectionID);
+                if ($section.length === 0) {
+                    console.error("section with id '%s' not found!", sectionID);
+                }
+                let comp = $section.getComponent();
+                comp.load(compName, args, function (...args) {
+                    if (typeof fn === "function") fn();
+                    resolve(...args);
+                });
+            });
         };
     });
     defineComp("section", function (global, $element) {

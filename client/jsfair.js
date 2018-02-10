@@ -85,9 +85,9 @@
     }
 
     /* GLOBAL */
-    global.onModulesLoaded = new Rx.Subject();
-    global.onPageLoaded = new Rx.Subject();
-    global.onComponentLoaded = new Rx.Subject();
+    global.onModulesLoaded = new Rx.ReplaySubject();
+    global.onPageLoaded = new Rx.ReplaySubject();
+    global.onComponentLoaded = new Rx.ReplaySubject();
     global.loadSubComponents = ($ele) => {
         return loadSubComps($ele[0])
     };
@@ -229,12 +229,11 @@
             global[module] = context;
         }
         global.onModulesLoaded.next();
-        // load components
-        console.time("load")
-        let a = loadSubComps($("body")[0]);
 
+        // load components
+        let a = loadSubComps($("body")[0]);
         a.then(function() {
-            console.timeEnd("load")
+            global.onPageLoaded.next();
             // console.log("page loaded");
         }, function () {
             // console.log("loading error"); //solte eigentlich nicht vorkommen
