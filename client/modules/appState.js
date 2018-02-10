@@ -121,6 +121,7 @@ define("AppState", function(global) {
             if (!section) {
                 console.error("error loading section '%s'", targetState.section[i][0]);
             } else {
+                console.log(targetState.section[i][1]);
                 let promise = section.load(targetState.section[i][1]);
                 wait.push(promise);
             }
@@ -131,7 +132,6 @@ define("AppState", function(global) {
         //fire event
         this.onAppStateChanged.next(targetState);
     }.bind(this);
-
 
 
 

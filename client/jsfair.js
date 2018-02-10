@@ -64,7 +64,9 @@
             let ele = document.importNode(template.content, true);
             fn(ele)
         } else {
-            fn();
+            console.log("#template-" + componentName + "-main")
+            console.log(document.head.querySelectorAll("template"))
+            fn(null);
         }
         return;
         if (TemplateCache.has(templatePath)) {
