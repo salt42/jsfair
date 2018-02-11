@@ -2,14 +2,24 @@
     "use strict";
     $.fn.appendTemplate = function(template, list, fn) {
         template = $(template)[0];
-        if (!template) throw new Error("template not found!");
+        if (!template) throw new Error("template not '%s' found!", template);
+        let rootFragment = document.createDocumentFragment();
         for (let i = 0; i < list.length; i++) {
-            let item = list[i];
-            let $ele = document.importNode(template.content, true);
-
-
+            let subFrag = template.content.cloneNode(true);
+            if (typeof fn === "function") fn(subFrag, list[i]);
+            rootFragment.append(subFrag)
         }
-        return this[0].getComponent();
+        let $ele = document.importNode(rootFragment, true);
+        this.append($ele);
+        return this;
     };
 
+    /* region sample */
+    // let listData = [{name:"ich"},{name:"du"},{name:"er"}];
+    //
+    // $("ul").appendTemplate($("template"), listData, function(fragment, value) {
+    //     //place data in template
+    // });
+    /*endregion*/
 }(jQuery));
+

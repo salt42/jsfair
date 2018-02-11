@@ -26,6 +26,10 @@
             "appState": {
                 "name": "appState",
                 "js":   "/jsfair/modules/appState.js"
+            },
+            "templateUtils": {
+                "name": "templateUtils",
+                "js":   "/jsfair/modules/templateUtils.js"
             }
         }
     }
