@@ -61,8 +61,8 @@
     function getTemplate(componentName, templatePath, fn) {
         let template = document.head.querySelector("#template-" + componentName + "-main");
         if (template) {
-            let ele = document.importNode(template.content, true);
-            fn(ele)
+            // let ele = document.importNode(template.content, true);
+            fn(template)
         } else {
             console.log("#template-" + componentName + "-main")
             console.log(document.head.querySelectorAll("template"))
@@ -203,8 +203,9 @@
                                 resolve();
                             });
                         } else {
-                            Components[componentName].init.call(ctx, global, $(template), args);
-                            $(ele).append(template);
+                            Components[componentName].init.call(ctx, global, template.content, args);
+                            let imported = document.importNode(template.content, true);
+                            $(ele).append(imported);
                             loadSubComps(ele).then(() => {
                                 if (ctx.hasOwnProperty("onLoad") && typeof ctx.onLoad === "function") {
                                     ctx.onLoad($(ele));

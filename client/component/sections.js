@@ -54,7 +54,7 @@
                 args = null;
             }
             if (_compName === compName) {
-                fn();
+                if (typeof fn === "function") fn();
             }
             //@todo check if comp exists
             if (persistent && $loadedComp) {

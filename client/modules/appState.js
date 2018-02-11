@@ -1,4 +1,5 @@
-defineComp("a", function(global, $ele, args) {
+defineComp("a", function(global) {
+    let $ele = this.$ele;
     $ele.css("cursor", "pointer");
     $ele.click(function(e) {
         let targetUrl = $ele.attr("href");
@@ -6,12 +7,7 @@ defineComp("a", function(global, $ele, args) {
             return;
         }
         e.preventDefault();
-        let target = $ele.attr("state");
-        if (target) {
-            global.AppState.goToState(target);
-            return;
-        }
-        target = $ele.attr("url");
+        let target = $ele.attr("url");
         if (target) {
             global.AppState.goToUrl(target);
         }
@@ -61,49 +57,9 @@ define("AppState", function(global) {
     ];
     this.onAppStateChanged = new Rx.ReplaySubject();
 
-    global.onPageLoaded.subscribe(function() {
-        if (!global.hasOwnProperty("sections")) {
-            console.error("AppState has dependecies to section component");
-            return;
-        }
-        if (global.hasOwnProperty("Config") && global.Config.hasOwnProperty("States")) {
-            //load states from config
-            appStates = global.Config.States;
-        }
-        //push init state
-        let startUrl = location.href.slice(location.href.indexOf(location.host) + location.host.length);
-        this.goToUrl(startUrl);
-    }.bind(this));
-    this.push = function(state) {
+    function push (state) {
         history.pushState(state, state.name, state.url);
-    };
-    this.goToState = function (stateName, data = null) {
-        let state;
-        for (let i = 0; i < appStates.length; i++) {
-            if (appStates[i].name === stateName) {
-                state = appStates[i];
-                break;
-            }
-        }
-        if (!state) console.error("no state with name '%s'", stateName);
-        this.push(state);
-        for (let i = 0; i < state.sections.length; i++) {
-            let section = $("#" + state.sections[i][0]).getComponent();
-            if (!section) continue; //@todo error
-            section.load(state.sections[i][1]);
-        }
-        onAppStateChanged.next();
-    };
-    window.onpopstate = function(event) {
-        //load comps
-        console.log(event);
-        for (let i = 0; i < event.state.sections.length; i++) {
-            let section = $("#" + event.state.sections[i][0]).getComponent();
-            if (!section) continue; //@todo error
-            section.load(event.state.sections[i][1]);
-        }
-    }.bind(this);
-
+    }
     function match(url, states, fn, _result = []) {
         for (let i = 0; i < states.length; i++) {
             let state = states[i];
@@ -149,6 +105,9 @@ define("AppState", function(global) {
                             if (debug) console.log("match subs");
                             url = url.replace(r[0], "");
                             match(url, state.sub, fn, _result);
+                        } else {
+                            if (debug) console.log("matching completed");
+                            if (typeof fn === "function") fn(_result);
                         }
                     }.bind(this));
                     return;
@@ -158,6 +117,9 @@ define("AppState", function(global) {
                         if (debug) console.log("match subs");
                         url = url.replace(r[0], "");
                         match(url, state.sub, fn, _result);
+                    } else {
+                        if (debug) console.log("matching completed");
+                        if (typeof fn === "function") fn(_result);
                     }
                     return;
                 }
@@ -171,12 +133,31 @@ define("AppState", function(global) {
     this.setDebug = (val) => {
         debug = val;
     };
-    this.onAppStateChanged.subscribe((e) => {
-        console.log(e)
-    });
     this.goToUrl = function (url) {
         match(url, appStates, (state) => {
+            push({
+                name: state[state.length-1],
+                url: url,
+                matches: state
+            });
         });
+    };
+
+    global.onPageLoaded.subscribe(function() {
+        if (!global.hasOwnProperty("sections")) {
+            console.error("AppState has dependecies to section component");
+            return;
+        }
+        if (global.hasOwnProperty("Config") && global.Config.hasOwnProperty("States")) {
+            //load states from config
+            appStates = global.Config.States;
+        }
+        //push init state
+        let startUrl = location.href.slice(location.href.indexOf(location.host) + location.host.length);
+        this.goToUrl(startUrl);
+    }.bind(this));
+    window.onpopstate = function(event) {
+        match(event.state.url, appStates, (state) => { });
     }.bind(this);
 
 
