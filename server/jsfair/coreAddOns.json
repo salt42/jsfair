@@ -30,6 +30,10 @@
             "templateUtils": {
                 "name": "templateUtils",
                 "js":   "/jsfair/modules/templateUtils.js"
+            },
+            "globalUtils": {
+                "name": "global",
+                "js":   "/jsfair/modules/globalUtils.js"
             }
         }
     }
