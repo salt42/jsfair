@@ -1,5 +1,6 @@
 defineComp("a", function(global) {
     let $ele = this.$ele;
+
     $ele.css("cursor", "pointer");
     $ele.click(function(e) {
         let targetUrl = $ele.attr("href");
@@ -8,6 +9,7 @@ defineComp("a", function(global) {
         }
         e.preventDefault();
         let target = $ele.attr("url");
+        console.log("new a comp", target);
         if (target) {
             global.AppState.goToUrl(target);
         }
@@ -15,7 +17,14 @@ defineComp("a", function(global) {
 });
 define("AppState", function(global) {
     "use strict";
-    let onAppStateChanged = new Rx.ReplaySubject();
+    /**
+     * @namespace global
+     * @property {object} AppState
+     */
+    /**
+     * @memberOf global.AppState
+     */
+    this.onAppStateChanged = new Rx.ReplaySubject();
     let debug = false;
     let self = this;
     let appStates = [
@@ -55,7 +64,6 @@ define("AppState", function(global) {
             }]
         },
     ];
-    this.onAppStateChanged = new Rx.ReplaySubject();
 
     function push (state) {
         history.pushState(state, state.name, state.url);
@@ -133,8 +141,13 @@ define("AppState", function(global) {
     this.setDebug = (val) => {
         debug = val;
     };
+    /**
+     * @memberOf global.AppState
+     * @param {string} url
+     */
     this.goToUrl = function (url) {
         match(url, appStates, (state) => {
+            console.log(state);
             push({
                 name: state[state.length-1],
                 url: url,
