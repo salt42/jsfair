@@ -27,7 +27,34 @@ let inactiveItems = {
 //         deinValue: "default value"
 //     }
 // });
-
+function init() {
+    let paths = [];
+    paths.push(Path.join(jsfairPath, "client/modules"));
+    paths.push(Path.join(jsfairPath, "client/component"));
+    for (let i = 0; i < config.client.modulePaths.length; i++) {
+        paths.push(ROOT_PATH, config.client.modulePaths[i]);
+    }
+    for (let i = 0; i < config.client.componentPaths.length; i++) {
+        paths.push(ROOT_PATH, config.client.componentPaths[i]);
+    }
+    let proms = [];
+    for (let i = 0; i < paths.length; i++) {
+        proms.push(addWatcher(paths[i]));
+    }
+    Promise.all(proms).then(function () {
+        process.stdout.write("NEED_CLIENT_RELOAD\n");
+    });
+}
+function addWatcher(path) {
+    return new Promise (function (resolve, reject) {
+        fs.watch(path, { encoding: 'buffer' }, (eventType, filename) => {
+            if (filename) {
+                run();
+                resolve();
+            }
+        });
+    });
+}
 function  run() {
     /* region create header tags pre section */
     let a;
@@ -299,7 +326,6 @@ if(devMock) items = {
         clientPostCss:        mock("CPoC", "clientPostCss:"       ),
         clientPostScript:     mock("CpoS", "clientPostScript:"    ),
 };
-log.info("Found Components, are they yours?");
 
 // hookIn.systemReady(() => {
 // });
