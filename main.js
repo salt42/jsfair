@@ -89,6 +89,7 @@ if (DEV_MODE) {
     });
 }
 
+process.stdout.write("NEED_CLIENT_RELOAD\n");
 /* endregion */
 //so und hier werden einfach alle server module geladen und dannach fehlt noch der init hook
 try {

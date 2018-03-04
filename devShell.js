@@ -58,7 +58,6 @@ let liveReload = false;
 let inspector = false;
 let headerStyle = Underscore +  FgCyan + BgBlack;
 let startArguments = ["--dev", '--inspectWait'];
-browser.init();
 function draw() {
     let liveColor = (!liveReload)? BgRed: BgGreen;
     let inspectColor = (!inspector)? BgRed: BgGreen;
@@ -139,7 +138,13 @@ function instantiateDevServer() {
     // devInstance = fork(scriptPath, ["--dev", "--root", rootPath], { stdio: ['pipe', 'pipe', 'pipe', 'ipc']  });
     // console.log(devInstance);
     devInstance.stdout.on("data", function(e) {
-        process.stderr.write(e);
+        if (e.toString() === "NEED_CLIENT_RELOAD\n") {
+            process.stdout.write(FgCyan + "-> RELOAD PAGE" + Reset + "\n");
+            browser.reload();
+            // process.stderr.write("\n");
+        } else {
+            process.stderr.write(e);
+        }
     });
     devInstance.stderr.on("data", function(e) {
         process.stderr.write(e);
@@ -153,9 +158,15 @@ function killDevServer() {
 }
 
 module.exports = function (_rootPath) {
-    rootPath = fs.realpathSync(_rootPath);
-    draw();
-    if (devInstance) killDevServer();
-    instantiateDevServer();
+    browser.init().then(() => {
+        console.log("start");
+        rootPath = fs.realpathSync(_rootPath);
+        draw();
+        if (devInstance) killDevServer();
+        instantiateDevServer();
+    }, (err) => {
+        console.error(err);
+        process.exit();
+    });
 };
 

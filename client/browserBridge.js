@@ -9,37 +9,39 @@
     }
     function initSocket() {
         close();
-        ws = new WebSocket('ws://' + host + ':4222');
+        try {
+            ws = new WebSocket('ws://' + host + ':65442');
 
-        ws.onopen = (e) => {
-            // console.log("socket open", e);
-            ws.send(JSON.stringify({
-                com: "handshake"
-            }));
-        };
-        ws.onclose = (e) => {
-            // console.log("socket close", e);
-            // reload();
-        };
-        ws.onerror = (e) => {
-            // console.log("socket error", e);
-            // reload();
-        };
-        ws.onmessage = function (event) {
-            let com = JSON.parse(event.data);
-            switch (com.com) {
-                case "handshake":
-                    break;
-                case "reload":
-                    ws.close();
-                    location.reload();
-                    break;
-            }
-        };
+            ws.onopen = (e) => {
+                ws.send(JSON.stringify({
+                    com: "handshake"
+                }));
+            };
+            ws.onclose = (e) => {
+                // reload();
+            };
+            ws.onerror = (e) => {
+                // reload();
+            };
+            ws.onmessage = function (event) {
+                let com = JSON.parse(event.data);
+                switch (com.com) {
+                    case "handshake":
+                        break;
+                    case "reload":
+                        ws.close();
+                        location.reload();
+                        break;
+                }
+            };
+        } catch (e) {
+
+        }
     }
     window.onbeforeunload = function (e) {
         close();
     };
+    console.log("start server");
     initSocket();
     setInterval(check, 5000);
 })();

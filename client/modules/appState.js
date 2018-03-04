@@ -102,7 +102,7 @@ define("AppState", function(global) {
                                 if (!section) {
                                     console.error("error loading section '%s'", state.sections[i][0]);
                                 } else {
-                                    let promise = section.load(state.sections[i][1]);
+                                    let promise = section.load(state.sections[i][1], args);
                                     wait.push(promise);
                                 }
                             });

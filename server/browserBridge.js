@@ -1,6 +1,7 @@
 const WebSocket = require('ws');
+const log = require('./jsfair/log')("browserBridge");
 let wss;
-let port = 4222;
+let port = 65442;
 
 let isPortTaken = function(port, fn) {
     let net = require('net');
@@ -16,21 +17,23 @@ let isPortTaken = function(port, fn) {
         .listen(port)
 };
 function create() {
+    log('start wss');
     //setup dev websocket server
     wss = new WebSocket.Server({port: port});
     wss.on('connection', function connection(ws) {
+
         ws.on('open', function incoming(message) {
-            // console.log('received: %s', message);
+            // log('received: %s', message);
         });
         ws.on('message', function incoming(message) {
-            // console.log('received: %s', message);
+            // log('received: %s', message);
         });
         ws.on('close', function incoming(message) {
-            // console.log('cient closed: %s', message);
+            // log('cient closed: %s', message);
         });
-        // ws.send({
-        //     com: "handshake",
-        // });
+        ws.send(JSON.stringify({
+            com: "handshake",
+        }));
     });
     wss.broadcast = function broadcast(data) {
         data = JSON.stringify(data);
@@ -39,7 +42,7 @@ function create() {
                 try {
                     client.send(data);
                 } catch (e) {
-                    console.log(e);
+                    log.error(e);
                 }
             }
         });
@@ -48,13 +51,18 @@ function create() {
 
 module.exports = {
     init: function() {
-        isPortTaken(port, function (no) {
-            if (no) {
-                create();
-            } else {
-                port++;
-                module.exports.init();
-            }
+        return new Promise(function (resolve, reject) {
+            isPortTaken(port, function (no) {
+                if (no) {
+                    create();
+                    resolve();
+                } else {
+                    log.error("Port %s is not free", port);
+                    reject();
+                    // port++;
+                    // module.exports.init();
+                }
+            });
         });
     },
     reload() {

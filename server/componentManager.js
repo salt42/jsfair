@@ -32,28 +32,26 @@ function init() {
     paths.push(Path.join(jsfairPath, "client/modules"));
     paths.push(Path.join(jsfairPath, "client/component"));
     for (let i = 0; i < config.client.modulePaths.length; i++) {
-        paths.push(ROOT_PATH, config.client.modulePaths[i]);
+        paths.push(createAbsolutePath(config.client.modulePaths[i]) );
     }
     for (let i = 0; i < config.client.componentPaths.length; i++) {
-        paths.push(ROOT_PATH, config.client.componentPaths[i]);
+        paths.push(createAbsolutePath(config.client.componentPaths[i]) );
     }
-    let proms = [];
+
     for (let i = 0; i < paths.length; i++) {
-        proms.push(addWatcher(paths[i]));
+        console.log("watch at: ", paths[i]);
+        fs.watch(paths[i], fileWatchHandler);
     }
-    Promise.all(proms).then(function () {
-        process.stdout.write("NEED_CLIENT_RELOAD\n");
-    });
+
+    log.info("Search Components");
+    run();
 }
-function addWatcher(path) {
-    return new Promise (function (resolve, reject) {
-        fs.watch(path, { encoding: 'buffer' }, (eventType, filename) => {
-            if (filename) {
-                run();
-                resolve();
-            }
-        });
-    });
+function fileWatchHandler(eventType, filename) {
+    log("File changed", filename);
+    if (filename) {
+        run();
+        process.stdout.write("NEED_CLIENT_RELOAD\n");
+    }
 }
 function  run() {
     /* region create header tags pre section */
@@ -313,8 +311,6 @@ function searchModules(relPath) {
 }
 /*endregion*/
 
-log.info("Search Components");
-run();
 
 if(devMock) items = {
         clientCoreModules:    mock("CCM",  "clientCoreModules:"   ),
@@ -360,6 +356,7 @@ function makeIterator(type, valueType) {
 //
 // if (devMock) log("Componets mocked".red);
 /*endregion*/
+init();
 module.exports = {
     items: items,
     inactive: inactiveItems,
