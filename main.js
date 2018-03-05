@@ -56,8 +56,6 @@ const conf = require('jsfair/config')(rootPath + "/conf.json");
 /* region dev mode */
 //dev mode
 if (DEV_MODE) {
-    log.info("run in dev mode");
-    // log.info("\x1b[31m run in dev mode\x1b[0m");
     if (DEV_MODE_INSPECTOR) {
         let wait = process.argv.indexOf('--inspectWait') > -1;
         const inspector = require('inspector');
@@ -89,15 +87,14 @@ if (DEV_MODE) {
     });
 }
 
-process.stdout.write("NEED_CLIENT_RELOAD\n");
 /* endregion */
 //so und hier werden einfach alle server module geladen und dannach fehlt noch der init hook
 try {
+    log.info("Start %s Server", conf.appName);
     let db = require("jsfair/database");
     let express = require("./server/express");
     let compMan = require('./server/componentManager');
     let autoHeader = require("./server/autoHeader");
-    log("Start %s Server", conf.appName);
     try {
         //@todo load server modules -> from componentManager->getActiveServerModuleIDs
         for (let x = 0; x < conf.server.modulePaths.length; x++) {
@@ -114,7 +111,7 @@ try {
                     log("%s",  e.stack.red);
                 }
                 if (!error) {
-                    log("Module loaded: %s", dir[i].green);
+                    log.info("Module loaded: %s", dir[i].green);
                 }
             }
         }

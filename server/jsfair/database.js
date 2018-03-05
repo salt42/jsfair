@@ -84,7 +84,6 @@ function runStatement(name, opt = {}, select = null) {
     return result;
 }
 function init() {
-    log.info("Init");
     // hook.trigger("db_onReady");
     hook.getTrigger("db_onReady", function(trigger, args) {
         trigger(DB);
@@ -102,7 +101,6 @@ module.exports = {
     init: init,
     runStatement: runStatement,
     getStatement: getStatement,
-    //aber die DB.prepare müssenw ir einbauen
     select(statement, option = {}) {
         console.log("jsfair/database.js: ", option);
         return DB.prepare(statement).all(option);

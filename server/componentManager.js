@@ -39,18 +39,21 @@ function init() {
     }
 
     for (let i = 0; i < paths.length; i++) {
-        console.log("watch at: ", paths[i]);
         fs.watch(paths[i], fileWatchHandler);
     }
-
-    log.info("Search Components");
     run();
 }
+let isRunning = false;
 function fileWatchHandler(eventType, filename) {
-    log("File changed", filename);
-    if (filename) {
-        run();
-        process.stdout.write("NEED_CLIENT_RELOAD\n");
+    if (!isRunning) {
+        if (filename) {
+            run();
+            process.stdout.write("NEED_CLIENT_RELOAD\n");
+        }
+        isRunning = true;
+        setTimeout(() => {
+            isRunning = false;
+        }, 2000);
     }
 }
 function  run() {

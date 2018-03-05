@@ -33,19 +33,19 @@ const BgWhite = "\x1b[47m"
 module.exports = function(moduleName) {
     let logger = function(...args) {
         let msg = util.format(...args);
-        process.stdout.write(util.format(FgMagenta + "[%s] %s\n" + Reset, moduleName, msg) );
+        process.stdout.write(util.format(FgMagenta + "[%s]" + Reset +" %s\n", moduleName, msg) );
     };
     logger.error = function(...args) {
         let msg = util.format(...args);
-        process.stdout.write(util.format(FgRed + "[%s] %s\n" + Reset, moduleName, msg) );
+        process.stdout.write(util.format(FgRed + "[%s]" + Reset +" %s\n", moduleName, msg) );
     };
     logger.warn = function(...args) {
         let msg = util.format(...args);
-        process.stdout.write(util.format(FgYellow + "[%s] %s\n" + Reset, moduleName, msg) );
+        process.stdout.write(util.format(FgYellow + "[%s]" + Reset +" %s\n", moduleName, msg) );
     };
     logger.info = function(...args) {
         let msg = util.format(...args);
-        process.stdout.write(util.format("[%s] %s\n" + Reset, moduleName, msg) );
+        process.stdout.write(util.format(FgBlue + "[%s]" + Reset +" %s\n", moduleName, msg) );
     };
     return logger;
 };

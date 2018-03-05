@@ -46,7 +46,6 @@ hookIn.http_init(function(app) {
         global.headerIncludes += createScriptTag(comp.js);
     }
     global.headerIncludes += templates;
-    log("Knitted your Header");
 });
 /* region auxiliaries */
 function createScriptTag(path) {
