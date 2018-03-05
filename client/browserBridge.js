@@ -41,7 +41,6 @@
     window.onbeforeunload = function (e) {
         close();
     };
-    console.log("start server");
     initSocket();
     setInterval(check, 5000);
 })();

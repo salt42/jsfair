@@ -3,15 +3,13 @@ defineComp("a", function(global) {
 
     $ele.css("cursor", "pointer");
     $ele.click(function(e) {
-        let targetUrl = $ele.attr("href");
-        if (targetUrl) {
+        if (!$ele[0].hasAttribute("url")) {
             return;
         }
+        let targetUrl = $ele.attr("url");
         e.preventDefault();
-        let target = $ele.attr("url");
-        console.log("new a comp", target);
-        if (target) {
-            global.AppState.goToUrl(target);
+        if (targetUrl) {
+            global.AppState.goToUrl(targetUrl);
         }
     });
 });
@@ -138,6 +136,9 @@ define("AppState", function(global) {
         if (debug) console.log("matching completed");
         if (typeof fn === "function") fn(_result);
     }
+    /**
+     * @memberOf global.AppState
+     */
     this.setDebug = (val) => {
         debug = val;
     };
@@ -146,6 +147,7 @@ define("AppState", function(global) {
      * @param {string} url
      */
     this.goToUrl = function (url) {
+        console.log("GoToUrl", url);
         match(url, appStates, (state) => {
             console.log(state);
             push({
@@ -172,10 +174,6 @@ define("AppState", function(global) {
     window.onpopstate = function(event) {
         match(event.state.url, appStates, (state) => { });
     }.bind(this);
-
-
-
-
 
 
 

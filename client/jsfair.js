@@ -119,6 +119,12 @@
         throw new Error(msg);
     };
 
+    /**
+     * @memberOf global
+     * @param {jQuery} $element
+     * @param {function} fn
+     * @param args
+     */
     global.loadComponent = function($element, fn, args) {
         let a = loadComp($element[0], args);
         a.then(function() {
@@ -131,6 +137,9 @@
     };
 
     class Component {
+        /**
+         * @param {string} name
+         */
         constructor(name) {
             this.name = name;
             this.$ele = null;
