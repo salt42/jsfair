@@ -1,5 +1,14 @@
 //core
 (function( $ ) {
+    /**
+     * The jQuery plugin namespace.
+     * @external "jQuery.fn"
+     * @see {@link http://docs.jquery.com/Plugins/Authoring The jQuery Plugin Guide}
+     */
+
+    /**
+     * @function external:"jQuery.fn".getComponent
+     */
     $.fn.getComponent = function() {
         if (this.length === 0 || !this[0].isComponent) {
             return false;
@@ -13,7 +22,7 @@
 
     const DEV = false;
     /**
-     * @namespace global
+     * @namespace Global
      * @property {jQuery|HTMLElement} $chatBox
      */
     const global = {};
@@ -48,7 +57,7 @@
 
     /**
      * @callback CompInitCallback
-     * @param {global} global
+     * @param {Global} global
      * @param template
      * @param args
      */
@@ -133,7 +142,7 @@
     };
 
     /**
-     * @memberOf global
+     * @memberOf Global
      * @param {jQuery} $element
      * @param {function} fn
      * @param args

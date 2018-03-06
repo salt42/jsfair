@@ -1,7 +1,16 @@
 (function() {
     "use strict";
 
-    define("sections", function(global) {
+    define("Section", function(global) {
+        /**
+         * @namespace Global
+         * @property {object} Section
+         */
+        /**
+         * @memberOf Global.Section
+         * @param {string} sectionName
+         * @returns {bool|Component}
+         */
         this.get = (sectionName) => {
             let sectionCtx = $('section#' + sectionName).data("context");
             if (!sectionCtx) {
@@ -10,6 +19,14 @@
             }
             return sectionCtx.getComponent();
         };
+        /**
+         * @memberOf Global.Section
+         * @param sectionID
+         * @param compName
+         * @param args
+         * @param fn
+         * @returns {Promise<any>}
+         */
         this.load = (sectionID, compName, args, fn) => {
             return new Promise(function(resolve, reject) {
                 if(typeof args === "function"){
@@ -26,6 +43,17 @@
                     resolve(...args);
                 });
             });
+        };
+        let self = this;
+        global.sections = {
+            get(...args) {
+                console.warn("global.sections.get() is deprecated. Use global.Section.get() instead.");
+                self.get(...args);
+            },
+            load(...args) {
+                console.warn("global.sections.load() is deprecated. Use global.Section.load() instead.");
+                self.load(...args);
+            }
         };
     });
     defineComp("section", function (global, $element) {

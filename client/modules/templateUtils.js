@@ -1,5 +1,18 @@
 (function($) {
     "use strict";
+    /**
+     * The jQuery plugin namespace.
+     * @external "jQuery.fn"
+     * @see {@link http://docs.jquery.com/Plugins/Authoring The jQuery Plugin Guide}
+     */
+
+    /**
+     * @function external:"jQuery.fn".appendTemplate
+     * @param template
+     * @param list
+     * @param fn
+     * @returns {jQuery}
+     */
     $.fn.appendTemplate = function(template, list, fn) {
         template = $(template)[0];
         if (!template) throw new Error("template not '%s' found!", template);

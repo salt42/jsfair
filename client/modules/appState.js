@@ -16,11 +16,11 @@ defineComp("a", function(global) {
 define("AppState", function(global) {
     "use strict";
     /**
-     * @namespace global
+     * @namespace Global
      * @property {object} AppState
      */
     /**
-     * @memberOf global.AppState
+     * @memberOf Global.AppState
      */
     this.onAppStateChanged = new Rx.ReplaySubject();
     let debug = false;
@@ -137,13 +137,13 @@ define("AppState", function(global) {
         if (typeof fn === "function") fn(_result);
     }
     /**
-     * @memberOf global.AppState
+     * @memberOf Global.AppState
      */
     this.setDebug = (val) => {
         debug = val;
     };
     /**
-     * @memberOf global.AppState
+     * @memberOf Global.AppState
      * @param {string} url
      */
     this.goToUrl = function (url) {
