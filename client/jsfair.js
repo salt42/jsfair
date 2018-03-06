@@ -23,7 +23,6 @@
     const DEV = false;
     /**
      * @namespace Global
-     * @property {jQuery|HTMLElement} $chatBox
      */
     const global = {};
     let Modules = {},
