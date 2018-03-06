@@ -45,7 +45,20 @@
         }
         Modules[moduleName] = initMethod;
     };
-    //defines a component
+
+    /**
+     * @callback CompInitCallback
+     * @param {global} global
+     * @param template
+     * @param args
+     */
+    function CompInitCallback(global, template, args) {}
+    /**
+     *
+     * @param compName
+     * @param {CompInitCallback} initMethod
+     * @param opt
+     */
     window.defineComp = function(compName, initMethod, opt) {
         compName = compName.toLowerCase();
         if(Components.hasOwnProperty(compName)) {
