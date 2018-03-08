@@ -363,5 +363,6 @@ init();
 module.exports = {
     items: items,
     inactive: inactiveItems,
+    reload: run,
     getIterator: makeIterator,
 };

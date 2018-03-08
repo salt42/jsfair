@@ -52,6 +52,7 @@ global.hookIn = new Proxy({}, hookProxyHandler);
 global.ROOT_PATH = fs.realpathSync(rootPath);
 global.jsfairPath = fs.realpathSync(__dirname);
 const conf = require('jsfair/config')(rootPath + "/conf.json");
+const compMan = require('./server/componentManager');
 
 /* region dev mode */
 //dev mode
@@ -71,9 +72,8 @@ if (DEV_MODE) {
         switch(message.com) {
             case "refreshClients":
                 try {
-                    // browser.reload();
+                    compMan.reload();
                 } catch (e) {
-                    console.log(e);
                 }
                 break;
             // case "startInspector":
@@ -93,7 +93,6 @@ try {
     log.info("Start %s Server", conf.appName);
     let db = require("jsfair/database");
     let express = require("./server/express");
-    let compMan = require('./server/componentManager');
     let autoHeader = require("./server/autoHeader");
     try {
         //@todo load server modules -> from componentManager->getActiveServerModuleIDs
