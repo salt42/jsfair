@@ -151,7 +151,7 @@
         a.then(function() {
             if (typeof fn === "function") fn();
         }, function (e) {
-            console.error("Component loading error!");
+            console.error("Component loading error!", a);
             throw e;
             // console.trace(e);
         })
