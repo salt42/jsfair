@@ -1,7 +1,16 @@
 (function($) {
     "use strict";
+    /**
+     * The jQuery plugin namespace.
+     * @external "jQuery.fn"
+     * @see {@link http://docs.jquery.com/Plugins/Authoring The jQuery Plugin Guide}
+     */
 
-
+    /**
+     * @function external:"jQuery.fn".hidesOnOuterClick
+     * @returns {jQuery}
+     * @param excludeSelector
+     */
     $.fn.hidesOnOuterClick = function(excludeSelector) {
         let self = this;
         let select = (!!excludeSelector) ? "1" : "0";
@@ -47,8 +56,26 @@
         return self;
     };
 
+    /**
+     * @function external:"jQuery.fn".removeOuterClick
+     * @param hideSelector
+     * @returns {jQuery}
+     */
     $.fn.removeOuterClick = function(hideSelector) {
         document.onclick = null;
         return this;
     };
+
+    /**
+     * @function external:"jQuery.fn".addDataSet
+     * @returns {jQuery}
+     * @param dataSet
+     */
+    $.fn.addDataSet = function(dataSet){
+        let $to = this;
+        for (let dataAttr in dataSet) {
+            $to.attr('data-' + dataAttr, dataSet[dataAttr]);
+        }
+        return this;
+    }
 }(jQuery));
