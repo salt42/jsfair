@@ -112,8 +112,8 @@ stdin.on( 'data', function( key ){
                 return;
             case "e":
                 process.stdout.write(FgCyan + "-> RELOAD PAGE" + Reset + "\n");
+                devInstance.send({com: "refreshClients"});
                 browser.reload();
-                // devInstance.send({com: "refreshClients"});
                 return;
             case "r":
                 //toggle live reload

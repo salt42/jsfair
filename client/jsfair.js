@@ -234,7 +234,7 @@
                             Components[componentName].init.call(ctx, global, $(ele), args);
                             loadSubComps(ele).then(() => {
                                 if (ctx.hasOwnProperty("onLoad") && typeof ctx.onLoad === "function") {
-                                    ctx.onLoad();
+                                    ctx.onLoad($(ele));
                                 }
                                 //global.onComponentLoaded.next(componentName);
                                 resolve();

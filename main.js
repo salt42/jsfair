@@ -53,6 +53,7 @@ global.ROOT_PATH = fs.realpathSync(rootPath);
 global.jsfairPath = fs.realpathSync(__dirname);
 const conf = require('jsfair/config')(rootPath + "/conf.json");
 const compMan = require('./server/componentManager');
+const autoHeader = require("./server/autoHeader");
 
 /* region dev mode */
 //dev mode
@@ -73,6 +74,7 @@ if (DEV_MODE) {
             case "refreshClients":
                 try {
                     compMan.reload();
+                    autoHeader.reload();
                 } catch (e) {
                 }
                 break;
@@ -93,7 +95,6 @@ try {
     log.info("Start %s Server", conf.appName);
     let db = require("jsfair/database");
     let express = require("./server/express");
-    let autoHeader = require("./server/autoHeader");
     try {
         //@todo load server modules -> from componentManager->getActiveServerModuleIDs
         for (let x = 0; x < conf.server.modulePaths.length; x++) {
