@@ -101,8 +101,6 @@ stdin.on( 'data', function( key ){
         let color, text;
         switch(key) {
             case "q":
-                process.stdout.write(FgCyan + "-> REFRESHING CLIENTS" + Reset + "\n");
-                devInstance.send({com: "refreshClients"});
                 process.stdout.write(FgCyan + "-> STOPPING SERVER..." + Reset + "\n");
                 process.exit();
                 return;
@@ -112,6 +110,7 @@ stdin.on( 'data', function( key ){
                 return;
             case "e":
                 process.stdout.write(FgCyan + "-> RELOAD PAGE" + Reset + "\n");
+                devInstance.send({com: "refreshClients"});
                 browser.reload();
                 // devInstance.send({com: "refreshClients"});
                 return;

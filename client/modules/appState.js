@@ -110,6 +110,7 @@ define("AppState", function(global) {
                         if(state.sub) {
                             if (debug) console.log("match subs");
                             url = url.replace(r[0], "");
+                            if (debug) console.log(url, state.sub, _result);
                             match(url, state.sub, fn, _result);
                         } else {
                             if (debug) console.log("matching completed");
