@@ -1,0 +1,9 @@
+<p>{{testVar}}</p>
+<div #for="user of Users">
+    <li #css="color:user.color"><span>{{user.name}} - {{user.color}}</span></li>
+    <dev-content></dev-content>
+    <dat-gui></dat-gui>
+</div>
+<span #css="color:user.color">
+    Hallo
+</span>

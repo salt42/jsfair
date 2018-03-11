@@ -56,7 +56,8 @@
             }
         };
     });
-    defineComp("section", function (global, $element) {
+    defineComp("section", function (global, template) {
+        let $element = this.$ele;
         let sectionID = $element.attr("id");
         let isStatic = !!$element.attr("static");
         let _compName = $element.attr("static") || $element.attr("default");
@@ -72,7 +73,7 @@
         if (_compName) {
             //load default or static comp
             let $comp = $("<" + _compName + ">");
-            $element.append($comp);
+            template.append($comp);
         }
 
         this.onLoad = () => {};

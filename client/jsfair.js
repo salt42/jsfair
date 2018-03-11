@@ -25,6 +25,8 @@
      * @namespace Global
      */
     const global = {};
+    /** @type {Scope} */
+    let rootScope;
     let Modules = {},
         Components = {},
         ComponentNames = [],
@@ -63,57 +65,32 @@
     function CompInitCallback(global, template, args) {}
     /**
      *
-     * @param compName
+     * @param {object|string} compMeta config object or component name
      * @param {CompInitCallback} initMethod
-     * @param opt
      */
-    window.defineComp = function(compName, initMethod, opt) {
-        compName = compName.toLowerCase();
-        if(Components.hasOwnProperty(compName)) {
-            console.error("Component name '"+ compName +"' already taken");
+    window.defineComp = function(compMeta, initMethod) {
+        if (typeof compMeta === "string") {
+            let compName = compMeta.toLowerCase();
+            if (Components.hasOwnProperty(compName)) {
+                console.error("Component name '" + compName + "' already taken");
+            }
+            compMeta = {
+                name: compName,
+            };
         }
-        let compMeta = {
-            name: compName,
-            init: initMethod
-        };
-        ComponentNames.push(compName);
-        if (typeof opt === "object") {
-            compMeta.templatePath = opt.templatePath || null
-        }
+        compMeta.init = initMethod;
 
-        Components[compName] = compMeta;
+        ComponentNames.push(compMeta.name);
+        Components[compMeta.name] = compMeta;
     };
 
     function getTemplate(componentName, templatePath, fn) {
         let template = document.head.querySelector("#template-" + componentName + "-main");
         if (template && !DEV) {
             // let ele = document.importNode(template.content, true);
-            fn(template)
+            fn(template.content);
         } else {
-            if (!templatePath) {
-                fn(null);
-                return;
-            }
-            //@todo try to load it
-            if (TemplateCache.has(templatePath)) {
-                fn(TemplateCache.get(templatePath));
-            } else {
-                $.ajax({
-                    url: templatePath
-                })
-                .then(function (res) {
-
-                    // TemplateCache.add(templatePath, res);
-                    let frag = document.createDocumentFragment();
-                    frag.innerHTML(res);
-
-                    fn({
-                        content: frag,
-                    });
-                }, function (e) {
-                    fn(null);
-                });
-            }
+            fn(document.createDocumentFragment());
         }
     }
 
@@ -122,7 +99,8 @@
     global.onPageLoaded = new Rx.ReplaySubject();
     global.onComponentLoaded = new Rx.ReplaySubject();
     global.loadSubComponents = ($ele) => {
-        return loadSubComps($ele[0])
+        console.error("deprecated ")
+        // return loadSubComps($ele[0])
     };
     global.getActiveComponent = function(sectionName) {
         let $section = $('section[name="'+ sectionName +'"]');
@@ -147,117 +125,430 @@
      * @param args
      */
     global.loadComponent = function($element, fn, args) {
-        let a = loadComp($element[0], args);
-        a.then(function() {
-            if (typeof fn === "function") fn();
-        }, function (e) {
-            console.error("Component loading error!", a);
-            throw e;
-            // console.trace(e);
-        })
+        let scope = getScope($element[0]);
+        initComp($element[0], scope, args);
     };
+    function getScope(element) {
+        while(element = element.parentNode) {
+            if (element.hasOwnProperty("jsFairScope") ) return element.jsFairScope;
+        }
+    }
+    function walkDOM(node, func) {
+        func(node);
+        node = node.firstChild;
+        while (node) {
+            walkDOM(node, func);
+            node = node.nextSibling;
+        }
+    }
+    function arrayDiff(a, b) {
+        return a.filter(function(i) {return b.indexOf(i) < 0;});
+    }
+    function fragmentFromString(strHTML) {
+        return document.createRange().createContextualFragment(strHTML);
+    }
+    let directives = [
+        {
+            name: "#for",
+            /**
+             * @param node
+             * @param attr
+             * @param {Scope} scope
+             */
+            init: function(node, attr, scope) {
+                let template = fragmentFromString(node.innerHTML);
+                node.innerHTML = '';
+                let blockScope = {};
+                //attr auslesen
+                let a = attr.match(/(\w*) (of|in|on) (\w*)/);
+                if (a.length !== 4) throw "Error in #for";//@niLive
+                let _data = scope.resolve(a[3]) || [];
+                redraw();
+                //@todo check array
+                // redraw(_data);
 
-    class Component {
+                scope.data.onUpdate.subscribe((prop) => {
+                    if (prop === a[3] ) {
+                        //compare data and
+                        // console.log(scope.data[a[3]], a[3], _data);
+                        // console.log(scope, a[3], scope.resolve(a[3]));
+                        // if (!_data) {
+                        //     _data = scope.resolve(a[3]);
+                            redraw();
+                        // } else {
+                        //     let newItems = arrayDiff(scope.data[a[3]], _data);
+                        //     let removeItems = arrayDiff(_data, scope.data[a[3]]);
+                        //     console.log("changed", newItems, removeItems);
+                        //
+                        //     // redraw(_data);
+                        // }
+                    }
+                });
+                function add(items) {}
+                function remove(items) {}
+                function redraw() {
+                    _data = scope.resolve(a[3]);
+                    let fragment = document.createDocumentFragment();
+                    for (let i = 0; i < _data.length; i++) {
+                        let subFrag = template.cloneNode(true);
+                        // blockScope[a[1]] = data[i];
+                        // scopeStack.push(blockScope);
+                        let itemScope = new Scope(subFrag.firstChild);
+                        itemScope.data[a[1]] = _data[i];
+                        scope.add(itemScope);
+                        initSubTree(subFrag, itemScope);
+                        // initDirectivesR(subFrag, ctx, scopeStack);
+                        fragment.append(subFrag);
+                    }
+                    node.innerHTML = "";
+                    node.append(fragment.cloneNode(true));
+                }
+                function readCtxData(ctx, prop) {
+                    if (blockScope.hasOwnProperty(prop)) return blockScope[prop];
+                    return ctx.data[prop];
+                }
+            }
+        },
+        {
+            name: "#text",
+            /**
+             * @param node
+             * @param attr
+             * @param {Scope} scope
+             */
+            init: function(node, attr, scope) {
+                //parse and split text
+                let re = /\{\{(.*?)\}\}/g;
+                let match;
+                let staticParts = [];
+                let properties = [];
+                let lastIndex = 0;
+
+                // console.log(node)
+                if (!node.textContent.match(re) ) {
+                    return;
+                }
+                while ((match = re.exec(node.textContent)) != null) {
+                    staticParts.push(node.textContent.substring(lastIndex, match.index));
+                    properties.push(match[1]);
+                    lastIndex = lastIndex + match[0].length;
+                }
+                // console.log("new text:", staticParts, properties)
+                function update() {
+                    let res = "";
+                    for (let i = 0; i < staticParts.length; i++) {
+                        let v = scope.resolve(properties[i]);
+                        res += staticParts[i] + ((v === undefined) ? "{{" + properties[i] + "}}": scope.resolve(properties[i]) );
+                    }
+                    // console.log(properties, scopeStack, ctx.data);
+                    // console.log(res);
+                    // console.log(res)
+                    node.textContent = res;
+                }
+                update();
+                scope.data.onUpdate.subscribe((prop) => {
+                    // if (prop === "" ) {
+                    // console.log("update text")
+                    update();
+                    //rerender text and add to element
+
+                    // }
+                });
+            }
+        },
+        {
+            name: "#css",
+            /**
+             * @param node
+             * @param attr
+             * @param {Scope} scope
+             */
+            init: function(node, attr, scope) {
+                //parse css
+                let cssProps = attr.split(";");
+                for (let i = 0; i < cssProps.length; i++) {
+                    let prop = cssProps[i].split(":");
+                    // style = TryResolveVar(prop[0], scopeStack) + ":" + TryResolveVar(prop[1], scopeStack) + ";";
+                    node.style[prop[0]] = scope.resolve(prop[1]);
+                }
+                //remove #attr
+                //add css attr
+                // function TryResolveVar(name, scopeStack, data) {
+                //     let nameParts = name.split(".");
+                //     for (let i = 0; i < scopeStack.length; i++) {
+                //         if (scopeStack[i].hasOwnProperty(nameParts[0]) ) return re(scopeStack[i]);
+                //     }
+                //     if (ctx.data.has(nameParts[0])) return ctx.data[nameParts[0]];
+                //     return name;
+                //     function re(target) {
+                //         let lastValue = target;
+                //         for (let j = 0; j < nameParts.length; j++) {
+                //             if (!lastValue.hasOwnProperty(nameParts[j]) ) return name;
+                //             lastValue = lastValue[nameParts[j]];
+                //         }
+                //         return lastValue;
+                //     }
+                // }
+            }
+        }
+    ];
+    let directivesNames = [
+        "#for",
+        "#text",
+        "#css"
+    ];
+    function initDirective(name, node, attr, scope) {
+        let index = directivesNames.indexOf(name);
+        if (index < 0) return;
+        //@todo if (!attr) attr = node.attributes[name]
+        directives[index].init(node, attr, scope);
+    }
+    class BaseComponent {
+        constructor(name) {
+            // this.data = Object.create({
+            //     set(key, value) {
+            //         if (typeof key === "string") {
+            //             if (typeof value === "function") {
+            //
+            //             }
+            //         } else if (typeof  key === "object") {
+            //             //flush all
+            //         }
+            //     }
+            // }, {});
+        }
+    }
+    class Component extends BaseComponent {
         /**
          * @param {string} name
+         * @param {Scope} scope
          */
-        constructor(name) {
+        constructor(name, scope) {
+            super(name);
             this.name = name;
+            this.scope = scope;
+            this.data = scope.data;
             this.$ele = null;
             this.template = null;
         }
         //@overwrite
         onLoad() {}
         observeAttributes(fn) {
-//todo
-// let observer = new MutationObserver(function(mutations) {
-//     mutations.forEach(function(mutation) {
-//         console.log(mutation.type);
-//     });
-// });
-// observer.observe($element[0], {
-//     attributes: true,
-//     childList: true,
-//     characterData: true
-// });
+            //todo
+            // let observer = new MutationObserver(function(mutations) {
+            //     mutations.forEach(function(mutation) {
+            //         console.log(mutation.type);
+            //     });
+            // });
+            // observer.observe($element[0], {
+            //     attributes: true,
+            //     childList: true,
+            //     characterData: true
+            // });
+        }
+        model(data) {
+            this.scope.setData(data);
         }
     }
-    function loadSubComps(ele) {
-        let promises = [];
-        for (let i = 0; i < ele.childNodes.length; i++) {
-            let tagName = ele.childNodes[i].tagName;
-            if (!tagName) continue;
-            // console.log("search comp:", tagName);
-            tagName = tagName.toLowerCase();
-            //check if comp
-            if (Components.hasOwnProperty(tagName)) {
-                //load comp
-                promises.push(loadComp(ele.childNodes[i]) );
-            } else {
-                //recursive step into
-                promises.push(loadSubComps(ele.childNodes[i]) );
+    class Scope {
+        constructor(ref) {
+            let self = this;
+            this.onDataUpdate = new Rx.Subject();
+            this._data = {};
+            this.ref = ref;
+            this.children = [];
+            this.data = new Proxy(this._data, {
+                get: function(target, name) {
+                    switch(name) {
+                        case "has":
+                            return target.hasOwnProperty;
+                        case "onUpdate":
+                            return self.onDataUpdate;
+                        default:
+                            if (!target.hasOwnProperty(name)) return;
+                            return target[name];
+                    }
+                    // return function(...args) {
+                    //     if (name === "init") return init(...args);
+                    //     if (dbMethods.hasOwnProperty(name) && typeof dbMethods[name] === "function") {
+                    //         return dbMethods[name].call(dbMethods, ...args);
+                    //     } else {
+                    //         let e = new Error(("No function registered with name: " + name).red);
+                    //         log(e.stack);
+                    //     }
+                    // }
+                },
+                apply(target, thisArg, argumentsList) {
+                    // if (argumentsList.length < 1) throw "##";
+                    // //set data
+                    // let data = argumentsList[0];
+                    // let props = [];
+                    // for (let prop in data) {
+                    //     if (!data.hasOwnProperty(prop)) continue;
+                    //     props.push(props);
+                    //     if (typeof data[prop] === "object") {
+                    //         if (data[prop] instanceof Rx.Observable) {
+                    //             //link pipe
+                    //             target[prop] = null;
+                    //             observerHandler(data, prop);
+                    //             continue;
+                    //         }
+                    //     }
+                    //     target[prop] = data[prop];
+                    // }
+                    // // console.log(data)
+                    // // console.dir(target)
+                    // self.onDataUpdate.next(props);
+                    // function observerHandler(data, prop) {
+                    //     data[prop].subscribe((d) => {
+                    //         //set data
+                    //         target[prop] = d;
+                    //         onDataUpdate.next(prop);
+                    //     })
+                    // }
+                },
+                set(target, property, value, receiver) {
+                    target[property] = value;
+                    self.onDataUpdate.next(property);
+                    return true;
+                },
+                has() {},
+                // apply(target, thisArg, argumentsList) {
+                //     //@todo call method on component context or in data?
+                //     return;
+                // },
+                construct() { throw "It's not allowed to instantiate data" }
+            });
+            /** @type {Scope} */
+            this.parent = null;
+        }
+        setData(data) {
+            let self = this;
+            if (!data) throw "##";
+            for (let prop in data) {
+                if (!data.hasOwnProperty(prop)) continue;
+                if (typeof data[prop] === "object") {
+                    if (data[prop] instanceof Rx.Observable) {
+                        //link pipe
+                        this._data[prop] = null;
+                        observerHandler(data, prop);
+                        continue;
+                    }
+                }
+                this._data[prop] = data[prop];
+                this.onDataUpdate.next(prop);
+            }
+            // console.log(data)
+            // console.dir(this._data)
+            function observerHandler(data, prop) {
+                data[prop].subscribe((d) => {
+                    //set data
+                    self.data[prop] = d;
+                    // self.onDataUpdate.next(prop);
+                })
             }
         }
-        return Promise.all(promises);
-    }
-    function loadComp(ele, args) {
-        return new Promise(
-            function(resolve, reject) {
-                try {
-                    let componentName = ele.tagName.toLowerCase();
-                    componentName = componentName.toLowerCase();
-                    if (ele.isComponent) {
-                        resolve();
-                        return;
-                    }
-                    if (!Components.hasOwnProperty(componentName)) {
-                        console.error("no component with name '%s'", componentName);
-                        resolve();
-                    }
-                    let ctx = new Component(componentName);
-                    ctx.$ele = $(ele);
-                    $(ele).data("context", ctx);
-                    // ele.context = ctx;
-                    ele.isComponent = true;
-                    ele.getComponent = () => {
-                        return ctx;
-                    };
+        resolve(property) {
+            // console.log("resolve", property, this.data);
+            let parts = (Array.isArray(property))? property: property.split(".");
+            if (this.data.has(parts[0])) {
+                let last = this.data[ parts[0] ];
 
-                    let templatePath = false;
-                    if (typeof Components[componentName] === "object" && Components[componentName].hasOwnProperty("templatePath")) {
-                        templatePath = Components[componentName].templatePath;
-                    }
-
-                    getTemplate(componentName, templatePath, (template) => {
-                        ctx.template = template;
-                        if (!template) {
-                            Components[componentName].init.call(ctx, global, $(ele), args);
-                            loadSubComps(ele).then(() => {
-                                if (ctx.hasOwnProperty("onLoad") && typeof ctx.onLoad === "function") {
-                                    ctx.onLoad($(ele));
-                                }
-                                //global.onComponentLoaded.next(componentName);
-                                resolve();
-                            });
-                        } else {
-                            Components[componentName].init.call(ctx, global, template.content, args);
-                            let imported = document.importNode(template.content, true);
-                            $(ele).append(imported);
-                            loadSubComps(ele).then(() => {
-                                if (ctx.hasOwnProperty("onLoad") && typeof ctx.onLoad === "function") {
-                                    ctx.onLoad($(ele));
-                                }
-                                //global.onComponentLoaded.next(componentName);
-                                resolve();
-                            });
-                        }
-                    });
-                } catch(e) {
-                    reject(e);
+                for (let i = 1; i < parts.length; i++) {
+                    // if (last.hasOwnProperty(parts[i])) return undefined;
+                    last = last[ parts[i] ];
                 }
-            });
+                return last;
+            } else {
+                // console.log("resolve -> next");
+                return (this.parent)? this.parent.resolve(parts): undefined;
+            }
+        }
+        /**
+         * @param {Scope} scope
+         */
+        add(scope) {
+            this.children.push(scope);
+            scope.parent = this;
+        }
     }
+
+    function initSubTree(node, scope) {
+        node = node.firstChild;
+        while (node) {
+            switch(node.nodeType) {
+                case 1:
+                    let tagName = node.tagName;
+                    if (tagName) {
+                        tagName = tagName.toLowerCase();
+                        //check if comp
+                        if (Components.hasOwnProperty(tagName)) {
+                            //load comp
+                            // loadComp(node, [], scope);
+                            initComp(node, scope, []);
+                            // initSubTree(node, scope);
+                            // return; //@todo??
+                        } else {
+                            initSubTree(node, scope);
+                        }
+                    }
+                    for (let i = 0; i < node.attributes.length; i++) {
+                        let name = node.attributes[i].name;
+                        if (name.charAt(0) !== "#") continue;
+                        initDirective(name, node, node.attributes[i].nodeValue, scope);
+                    }
+                    break;
+                case 3:
+                    initDirective("#text", node, null, scope);
+                    break;
+                case 11:
+                    //document fragment
+                    console.log("document");
+                    break;
+                default:
+                    initSubTree(node, scope);
+            }
+            node = node.nextSibling;
+        }
+    }
+
+    function initComp(node, scope, args) {
+        let componentName = node.tagName.toLowerCase();
+        componentName = componentName.toLowerCase();
+        if (node.jsFairComponent) return;
+        if (!Components.hasOwnProperty(componentName)) throw ("no component with name: " + componentName);
+
+        let compScope = new Scope(node);
+        scope.add(compScope);
+        let ctx = new Component(componentName, compScope);
+        ctx.$ele = $(node);
+        $(node).data("context", ctx);//@todo deprecated
+        node.jsFairComponent = ctx;
+        node.jsFairScope = compScope;
+        node.getComponent = () => {
+            return ctx;
+        };
+
+        let templatePath = false;
+        if (typeof Components[componentName] === "object" && Components[componentName].hasOwnProperty("templatePath")) {
+            templatePath = Components[componentName].templatePath;
+        }
+
+        getTemplate(componentName, templatePath, (template) => {
+            Components[componentName].init.call(ctx, global, $(template), args);
+            initSubTree(template, compScope);
+            node.append(template);
+
+            if (ctx.hasOwnProperty("onLoad") && typeof ctx.onLoad === "function") {
+                ctx.onLoad($(node));
+            }
+            //global.onComponentLoaded.next(componentName);
+
+        });
+    }
+
     window.onload = function() {
+        rootScope = new Scope(document.body);
         //init modules
         for(let module in Modules) {
             if (!Modules.hasOwnProperty(module)) continue;
@@ -268,12 +559,12 @@
         global.onModulesLoaded.next();
 
         // load components
-        let a = loadSubComps($("body")[0]);
-        a.then(function() {
-            global.onPageLoaded.next();
-            // console.log("page loaded");
-        }, function () {
-            // console.log("loading error"); //solte eigentlich nicht vorkommen
-        })
+        console.time("krass")
+        initSubTree(document.body, rootScope);
+        console.timeEnd("krass")
+        global.onPageLoaded.next();
+        window.G = {
+            rootScope: rootScope
+        };
     };
 })();
