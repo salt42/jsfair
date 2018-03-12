@@ -213,24 +213,19 @@
     global.onModulesLoaded = new Rx.ReplaySubject();
     global.onPageLoaded = new Rx.ReplaySubject();
     global.onComponentLoaded = new Rx.ReplaySubject();
+    //@todo deprecated
     global.loadSubComponents = ($ele) => {
         console.error("deprecated ")
         // return loadSubComps($ele[0])
     };
+    //@todo deprecated
     global.getActiveComponent = function(sectionName) {
+        console.error("deprecated ")
         let $section = $('section[name="'+ sectionName +'"]');
         if ($section.length < 0) {
             throw new Error("section with name '"+ sectionName+"' not found");
         }
         return $section.data("context");
-    };
-
-    //@todo overwriteable error functions    think through
-    global.error = function(id, title, msg) {
-        throw new Error(msg);
-    };
-    global.fatalError = function(msg) {
-        throw new Error(msg);
     };
 
     /**
@@ -389,9 +384,8 @@
             let parts = (Array.isArray(property))? property: property.split(".");
             if (this.data.has(parts[0])) {
                 let last = this.data[ parts[0] ];
-
                 for (let i = 1; i < parts.length; i++) {
-                    // if (last.hasOwnProperty(parts[i])) return undefined;
+                    if (last === null || last === undefined) return undefined;
                     last = last[ parts[i] ];
                 }
                 return last;
