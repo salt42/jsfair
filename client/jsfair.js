@@ -10,10 +10,10 @@
      * @function external:"jQuery.fn".getComponent
      */
     $.fn.getComponent = function() {
-        if (this.length === 0 || !this[0].isComponent) {
+        if (this.length === 0 || !this[0].hasOwnProperty("jsFairComponent")) {
             return false;
         }
-        return this[0].getComponent();
+        return this[0].jsFairComponent;
     };
 
 }( jQuery ));
