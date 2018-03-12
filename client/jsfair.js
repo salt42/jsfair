@@ -48,168 +48,8 @@
             }
         };
 
-    //defines a core module
-    window.define = function(moduleName, initMethod) {
-        if(Modules.hasOwnProperty(moduleName)) {
-            console.error("Module name '"+ moduleName +"' already taken");
-        }
-        Modules[moduleName] = initMethod;
-    };
-
-    /**
-     * @callback CompInitCallback
-     * @param {Global} global
-     * @param template
-     * @param args
-     */
-    function CompInitCallback(global, template, args) {}
-    /**
-     *
-     * @param {object|string} compMeta config object or component name
-     * @param {CompInitCallback} initMethod
-     */
-    window.defineComp = function(compMeta, initMethod) {
-        if (typeof compMeta === "string") {
-            let compName = compMeta.toLowerCase();
-            if (Components.hasOwnProperty(compName)) {
-                console.error("Component name '" + compName + "' already taken");
-            }
-            compMeta = {
-                name: compName,
-            };
-        }
-        compMeta.init = initMethod;
-
-        ComponentNames.push(compMeta.name);
-        Components[compMeta.name] = compMeta;
-    };
-
-    function getTemplate(componentName, templatePath, fn) {
-        let template = document.head.querySelector("#template-" + componentName + "-main");
-        if (template && !DEV) {
-            // let ele = document.importNode(template.content, true);
-            fn(template.content);
-        } else {
-            fn(document.createDocumentFragment());
-        }
-    }
-
-    /* GLOBAL */
-    global.onModulesLoaded = new Rx.ReplaySubject();
-    global.onPageLoaded = new Rx.ReplaySubject();
-    global.onComponentLoaded = new Rx.ReplaySubject();
-    global.loadSubComponents = ($ele) => {
-        console.error("deprecated ")
-        // return loadSubComps($ele[0])
-    };
-    global.getActiveComponent = function(sectionName) {
-        let $section = $('section[name="'+ sectionName +'"]');
-        if ($section.length < 0) {
-            throw new Error("section with name '"+ sectionName+"' not found");
-        }
-        return $section.data("context");
-    };
-
-    //@todo overwriteable error functions    think through
-    global.error = function(id, title, msg) {
-        throw new Error(msg);
-    };
-    global.fatalError = function(msg) {
-        throw new Error(msg);
-    };
-
-    /**
-     * @memberOf Global
-     * @param {jQuery} $element
-     * @param {function} fn
-     * @param args
-     */
-    global.loadComponent = function($element, fn, args) {
-        let scope = getScope($element[0]);
-        initComp($element[0], scope, args);
-    };
-    function getScope(element) {
-        while(element = element.parentNode) {
-            if (element.hasOwnProperty("jsFairScope") ) return element.jsFairScope;
-        }
-    }
-    function walkDOM(node, func) {
-        func(node);
-        node = node.firstChild;
-        while (node) {
-            walkDOM(node, func);
-            node = node.nextSibling;
-        }
-    }
-    function arrayDiff(a, b) {
-        return a.filter(function(i) {return b.indexOf(i) < 0;});
-    }
-    function fragmentFromString(strHTML) {
-        return document.createRange().createContextualFragment(strHTML);
-    }
-    let directives = [
-        {
-            name: "#for",
-            /**
-             * @param node
-             * @param attr
-             * @param {Scope} scope
-             */
-            init: function(node, attr, scope) {
-                let template = fragmentFromString(node.innerHTML);
-                node.innerHTML = '';
-                let blockScope = {};
-                //attr auslesen
-                let a = attr.match(/(\w*) (of|in|on) (\w*)/);
-                if (a.length !== 4) throw "Error in #for";//@niLive
-                let _data = scope.resolve(a[3]) || [];
-                redraw();
-                //@todo check array
-                // redraw(_data);
-
-                scope.data.onUpdate.subscribe((prop) => {
-                    if (prop === a[3] ) {
-                        //compare data and
-                        // console.log(scope.data[a[3]], a[3], _data);
-                        // console.log(scope, a[3], scope.resolve(a[3]));
-                        // if (!_data) {
-                        //     _data = scope.resolve(a[3]);
-                            redraw();
-                        // } else {
-                        //     let newItems = arrayDiff(scope.data[a[3]], _data);
-                        //     let removeItems = arrayDiff(_data, scope.data[a[3]]);
-                        //     console.log("changed", newItems, removeItems);
-                        //
-                        //     // redraw(_data);
-                        // }
-                    }
-                });
-                function add(items) {}
-                function remove(items) {}
-                function redraw() {
-                    _data = scope.resolve(a[3]);
-                    let fragment = document.createDocumentFragment();
-                    for (let i = 0; i < _data.length; i++) {
-                        let subFrag = template.cloneNode(true);
-                        // blockScope[a[1]] = data[i];
-                        // scopeStack.push(blockScope);
-                        let itemScope = new Scope(subFrag.firstChild);
-                        itemScope.data[a[1]] = _data[i];
-                        scope.add(itemScope);
-                        initSubTree(subFrag, itemScope);
-                        // initDirectivesR(subFrag, ctx, scopeStack);
-                        fragment.append(subFrag);
-                    }
-                    node.innerHTML = "";
-                    node.append(fragment.cloneNode(true));
-                }
-                function readCtxData(ctx, prop) {
-                    if (blockScope.hasOwnProperty(prop)) return blockScope[prop];
-                    return ctx.data[prop];
-                }
-            }
-        },
-        {
+    let directives = {
+        "#text": {
             name: "#text",
             /**
              * @param node
@@ -256,7 +96,7 @@
                 });
             }
         },
-        {
+        "#css": {
             name: "#css",
             /**
              * @param node
@@ -291,42 +131,137 @@
                 // }
             }
         }
-    ];
-    let directivesNames = [
-        "#for",
+    };
+    let directiveNames = [
         "#text",
         "#css"
     ];
+    //defines a core module
+    window.define = function(moduleName, initMethod) {
+        if(Modules.hasOwnProperty(moduleName)) {
+            console.error("Module name '"+ moduleName +"' already taken");
+        }
+        Modules[moduleName] = initMethod;
+    };
+
+    /**
+     * @callback CompInitCallback
+     * @param {Global} global
+     * @param template
+     * @param args
+     */
+    function CompInitCallback(global, template, args) {}
+    /**
+     *
+     * @param {object|string} compMeta config object or component name
+     * @param {CompInitCallback} initMethod
+     */
+    window.defineComp = function(compMeta, initMethod) {
+        if (typeof compMeta === "string") {
+            let compName = compMeta.toLowerCase();
+            if (Components.hasOwnProperty(compName)) {
+                console.error("Component name '" + compName + "' already taken");
+            }
+            compMeta = {
+                name: compName,
+            };
+        }
+        compMeta.init = initMethod;
+
+        ComponentNames.push(compMeta.name);
+        Components[compMeta.name] = compMeta;
+    };
+
+    /**
+     * @callback DirectiveInitCallback
+     * @param {HTMLElement} node
+     * @param {String} attr
+     * @param {Scope} scope
+     */
+    function DirectiveInitCallback(node, attr, scope) {}
+    /**
+     * @param {Object} meta
+     * @param {DirectiveInitCallback} fn
+     */
+    window.defineDirective = function(meta, fn) {
+        if (directives.hasOwnProperty(meta.name)) {
+            console.error("Component name '" + meta.name + "' already taken");
+        }
+        meta.init = fn;
+
+        directiveNames.push(meta.name);
+        directives[meta.name] = meta;
+    };
+
     function initDirective(name, node, attr, scope) {
-        let index = directivesNames.indexOf(name);
-        if (index < 0) return;
-        //@todo if (!attr) attr = node.attributes[name]
-        directives[index].init(node, attr, scope);
+        if (!directives.hasOwnProperty(name)) return;
+        // @todo if (!attr) attr = node.attributes[name]
+        directives[name].init(node, attr, scope);
+    }
+
+    function getTemplate(componentName, templatePath, fn) {
+        let template = document.head.querySelector("#template-" + componentName + "-main");
+        if (template && !DEV) {
+            // let ele = document.importNode(template.content, true);
+            fn(template.content.cloneNode(true));
+        } else {
+            fn(document.createDocumentFragment());
+        }
+    }
+
+    /* GLOBAL */
+    global.onModulesLoaded = new Rx.ReplaySubject();
+    global.onPageLoaded = new Rx.ReplaySubject();
+    global.onComponentLoaded = new Rx.ReplaySubject();
+    global.loadSubComponents = ($ele) => {
+        console.error("deprecated ")
+        // return loadSubComps($ele[0])
+    };
+    global.getActiveComponent = function(sectionName) {
+        let $section = $('section[name="'+ sectionName +'"]');
+        if ($section.length < 0) {
+            throw new Error("section with name '"+ sectionName+"' not found");
+        }
+        return $section.data("context");
+    };
+
+    //@todo overwriteable error functions    think through
+    global.error = function(id, title, msg) {
+        throw new Error(msg);
+    };
+    global.fatalError = function(msg) {
+        throw new Error(msg);
+    };
+
+    /**
+     * @memberOf Global
+     * @param {jQuery} $element
+     * @param {function} fn
+     * @param args
+     */
+    global.loadComponent = function($element, fn, args) {
+        let scope = getScope($element[0]);
+        initComp($element[0], scope, args);
+    };
+    function getScope(element) {
+        while(element = element.parentNode) {
+            if (element.hasOwnProperty("jsFairScope") ) return element.jsFairScope;
+        }
+    }
+    function arrayDiff(a, b) {
+        return a.filter(function(i) {return b.indexOf(i) < 0;});
     }
     class BaseComponent {
-        constructor(name) {
-            // this.data = Object.create({
-            //     set(key, value) {
-            //         if (typeof key === "string") {
-            //             if (typeof value === "function") {
-            //
-            //             }
-            //         } else if (typeof  key === "object") {
-            //             //flush all
-            //         }
-            //     }
-            // }, {});
+        constructor(name, scope) {
+            /** typeof {String} */
+            this.name = name;
+            /** typeof {Scope} */
+            this.scope = scope;
         }
     }
     class Component extends BaseComponent {
-        /**
-         * @param {string} name
-         * @param {Scope} scope
-         */
         constructor(name, scope) {
-            super(name);
-            this.name = name;
-            this.scope = scope;
+            super(name, scope);
             this.data = scope.data;
             this.$ele = null;
             this.template = null;
@@ -421,6 +356,7 @@
             });
             /** @type {Scope} */
             this.parent = null;
+            ref.jsFairScope = this;
         }
         setData(data) {
             let self = this;
@@ -471,8 +407,31 @@
             this.children.push(scope);
             scope.parent = this;
         }
+        removeAll() {
+            for (let i = 0; i < this.children.length; i++) {
+                let scope = this.children[i];
+                scope.parent = null;
+                scope.ref = null;
+            }
+            this.children = [];
+        }
+        /**
+         * @returns {Component}
+         */
+        getComp() {
+            if (this.ref.hasOwnProperty("jsFairComponent")) {
+                return this.ref.jsFairComponent;
+            } else if (this.parent) {
+                return this.parent.getComp();
+            }
+        }
     }
 
+    /**
+     * @memberOf Global
+     * @param {HTMLElement|DocumentFragment|HTMLBaseElement} node
+     * @param {Scope} scope
+     */
     function initSubTree(node, scope) {
         node = node.firstChild;
         while (node) {
@@ -487,9 +446,8 @@
                             // loadComp(node, [], scope);
                             initComp(node, scope, []);
                             // initSubTree(node, scope);
-                            // return; //@todo??
-                        } else {
-                            initSubTree(node, scope);
+                            node = node.nextSibling;
+                            continue;
                         }
                     }
                     for (let i = 0; i < node.attributes.length; i++) {
@@ -497,13 +455,13 @@
                         if (name.charAt(0) !== "#") continue;
                         initDirective(name, node, node.attributes[i].nodeValue, scope);
                     }
+                    initSubTree(node, scope);
                     break;
                 case 3:
                     initDirective("#text", node, null, scope);
                     break;
                 case 11:
                     //document fragment
-                    console.log("document");
                     break;
                 default:
                     initSubTree(node, scope);
@@ -511,7 +469,13 @@
             node = node.nextSibling;
         }
     }
-
+    global.initSubTree = initSubTree;
+    /**
+     * @memberOf Global
+     * @param {HTMLElement} node
+     * @param {Scope} scope
+     * @param args
+     */
     function initComp(node, scope, args) {
         let componentName = node.tagName.toLowerCase();
         componentName = componentName.toLowerCase();
@@ -524,7 +488,7 @@
         ctx.$ele = $(node);
         $(node).data("context", ctx);//@todo deprecated
         node.jsFairComponent = ctx;
-        node.jsFairScope = compScope;
+        // node.jsFairScope = compScope;
         node.getComponent = () => {
             return ctx;
         };
@@ -537,7 +501,7 @@
         getTemplate(componentName, templatePath, (template) => {
             Components[componentName].init.call(ctx, global, $(template), args);
             initSubTree(template, compScope);
-            node.append(template);
+            node.appendChild(template);
 
             if (ctx.hasOwnProperty("onLoad") && typeof ctx.onLoad === "function") {
                 ctx.onLoad($(node));
@@ -546,6 +510,7 @@
 
         });
     }
+    global.initComp = initComp;
 
     window.onload = function() {
         rootScope = new Scope(document.body);
@@ -559,12 +524,148 @@
         global.onModulesLoaded.next();
 
         // load components
-        console.time("krass")
+        console.time("krass");
         initSubTree(document.body, rootScope);
-        console.timeEnd("krass")
+        console.timeEnd("krass");
         global.onPageLoaded.next();
         window.G = {
             rootScope: rootScope
         };
     };
+
+    window.jsFair = {};
+    window.jsFair.global = global;
+    window.jsFair.Scope = Scope;
+    window.jsFair.Component = Component;
+    window.jsFair.BaseComponent = BaseComponent;
 })();
+
+defineDirective({ name: "#for" }, function (node, attr, scope) {
+    let template = document.createRange().createContextualFragment(node.innerHTML);
+    node.innerHTML = '';
+    while (template.firstChild.nodeType !== 1) {
+        template.removeChild(template.firstChild);
+    }
+
+    //attr auslesen
+    let a = attr.match(/(\w*) (of|in|on) (\w*)/);
+    if (a.length !== 4) throw "Error in #for";//@niLive
+    let _data = scope.resolve(a[3]) || [];
+    let forScope = new jsFair.Scope(node);
+    scope.add(forScope);
+    redraw();
+
+    scope.data.onUpdate.subscribe((prop) => {
+        //@todo if dynamic update sub scopes
+        if (prop === a[3] ) redraw();
+    });
+    //@todo add modes (dynamic)
+    // function add(items) {}
+    // function remove(items) {}
+    function redraw() {
+        //@todo remove old scopes from scope
+        forScope.removeAll();
+        _data = scope.resolve(a[3]);
+        let fragment = document.createDocumentFragment();
+        for (let i = 0; i < _data.length; i++) {
+            let subFrag = template.cloneNode(true);
+            // blockScope[a[1]] = data[i];
+            // scopeStack.push(blockScope);
+            let itemScope = new jsFair.Scope(subFrag.firstChild);
+            itemScope.data[a[1]] = _data[i];
+            forScope.add(itemScope);
+            // debugger;
+            jsFair.global.initSubTree(subFrag, itemScope);
+            // initDirectivesR(subFrag, ctx, scopeStack);
+            fragment.append(subFrag);
+        }
+        node.innerHTML = "";
+        node.append(fragment);
+    }
+});
+defineDirective({ name: "#on" }, function (node, attr, scope) {
+    /**
+     * @private
+     * @param  {Element} elem     Starting element
+     * @param  {String}  selector Selector to match against
+     * @return {Boolean|Element}  Returns false if not match found
+     */
+    function hasParent(elem, selector) {
+        // Element.matches() polyfill
+        if (!Element.prototype.matches) {
+            Element.prototype.matches =
+                Element.prototype.matchesSelector ||
+                Element.prototype.mozMatchesSelector ||
+                Element.prototype.msMatchesSelector ||
+                Element.prototype.oMatchesSelector ||
+                Element.prototype.webkitMatchesSelector ||
+                function(s) {
+                    let matches = (this.document || this.ownerDocument).querySelectorAll(s),
+                        i = matches.length;
+                    while (--i >= 0 && matches.item(i) !== this) {}
+                    return i > -1;
+                };
+        }
+
+        if ( elem.matches( selector ) ) return elem;
+        for ( ; elem && elem !== document; elem = elem.parentNode ) {
+            if ( elem.matches( selector ) ) return elem;
+        }
+        return false;
+    }
+    //attr auslesen
+    let comp = scope.getComp();
+    let events = attr.split("::");
+    for (let event of events) {
+        createEventHandler(event);
+    }
+    function createEventHandler(event) {
+        let match;
+        let e = event.split(":");
+        let isFilter = (e.length === 3);
+        let filter = e[1];
+        event = (isFilter)? e[2]: e[1];
+        match = event.match(/(\w*)\(([\w,\s.]*)\)/);
+        // if (match.length !== 4) throw "Error in #for";//@niLive
+        // while ((match = /(\w*):(\w*)\(([\w,\s.]*)\)/g.exec(attr)) != null) {}
+        let eventType = e[0];
+        let eventHandler = match[1];
+        let eventHandlerArgs = match[2].replace(/\s/g, '').split(",");
+        node.addEventListener(eventType, function (e) {
+            let targetNode = node;
+            let targetScope = scope;
+            if (isFilter) {
+                targetNode = hasParent(e.target, filter);
+                if (targetNode.hasOwnProperty("jsFairScope") ) targetScope = targetNode.jsFairScope;
+                // console.dir(targetNode)
+                if (!targetNode) return;
+            }
+            let args = [];
+            for (let i = 0; i < eventHandlerArgs.length; i++) {
+                args.push(resolve(eventHandlerArgs[i], e, targetNode, targetScope));
+            }
+            if (typeof comp[eventHandler] === "function") comp[eventHandler](...args);
+        });
+    }
+    function resolve(name, event, node, scope) {
+        if (name === "event") return event;
+        if (name === "this") return node;
+        return scope.resolve(name);
+    }
+});
+defineDirective({ name: "#data" }, function (node, attr, scope) {
+    let a = attr.split(":");
+    if (a.length !== 2) throw "Error in #data";//@niLive
+
+    node.dataset[a[0]] = scope.resolve(a[1]);
+    node.removeAttribute("#data");
+    scope.data.onUpdate.subscribe((prop) => {
+        if (prop === a[1].split(".")[0] ) node.setAttribute(a[0], scope.resolve(a[1]) );
+    });
+});
+defineDirective({ name: "#value" }, function (node, attr, scope) {
+    node.value = scope.resolve(attr);
+    scope.data.onUpdate.subscribe((prop) => {
+        if (prop === attr.split(".")[0] ) node.value = scope.resolve(attr);
+    });
+});

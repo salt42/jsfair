@@ -1,9 +1,7 @@
 <p>{{testVar}}</p>
-<div #for="user of Users">
-    <li #css="color:user.color"><span>{{user.name}} - {{user.color}}</span></li>
-    <dev-content></dev-content>
-    <dat-gui></dat-gui>
-</div>
-<span #css="color:user.color">
+<span #css="color:user.color" #on="mouseover:onUserSelect(event, this, testVar)::click:onUserClick(this)">
     Hallo
 </span>
+<ul #for="user of Users" #on="click:li:onUserSelect(event, this, user)">
+    <li #css="color:user.color" #data="username:user.name"><dev-content></dev-content></li>
+</ul>

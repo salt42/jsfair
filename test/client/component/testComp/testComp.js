@@ -16,25 +16,26 @@ defineComp({
             name: "ich",
             color: "#77c4bb"
         },{
+            name: "du",
+            color: "#77c4bb"
+        },{
+            name: "er",
+            color: "#77c4bb"
+        },{
+            name: "sie",
+            color: "#77c4bb"
+        },{
             name: "es",
-            color: "#77c4bb"
-        },{
-            name: "efgdss",
-            color: "#77c4bb"
-        },{
-            name: "egfs",
-            color: "#77c4bb"
-        },{
-            name: "eaas",
-            color: "#77c4bb"
-        },{
-            name: "es5435",
-            color: "#77c4bb"
-        },{
-            name: "es6565654",
             color: "#77c4bb"
         }]
     });
+    this.onUserSelect = function(event, node, user) {
+        user.color = "#" + Math.floor(Math.random() * 255 * 255 * 255).toString(16);
+        this.data.Users = this.data.Users;
+    };
+    this.onUserClick = function(node) {
+        console.log("click")
+    };
     // console.log(this.data)
     // this.data.onUpdate.subscribe((...e) => console.log(...e));
     // setTimeout(function() {
@@ -60,23 +61,12 @@ defineComp({
     //     } else {
     //         i = 0;
     //     }
+    //     this.data.Users[0].color = "#" + Math.floor(Math.random() * 255 * 255 * 255).toString(16);
+    //     this.data.Users[1].color = "#" + Math.floor(Math.random() * 255 * 255 * 255).toString(16);
+    //     this.data.Users = this.data.Users;
     // }, 1000);
 
 
-
-
-    // $element.html('<input type="number" value="999999999">');
-    // $element.css("background", "#" + Math.floor(Math.random() * 255 * 255 * 255).toString(16) );
-    //load default comp
-    // global.loadComponent("gMap");
     this.onLoad = () => {};
 
 });
-
-//!! global require dummy needed
-// require();
-// defineModule({
-//     name: "TestModule"
-// }, function() {
-//
-// });
