@@ -191,3 +191,7 @@ module.exports = function (_rootPath) {
     });
 };
 
+process.on('uncaughtException', function (err) {
+    console.log("ERROR IN DEV SHELL");
+    throw err;
+});
