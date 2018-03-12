@@ -6,6 +6,7 @@ const fs      = require("fs");
 const Path    = require("path");
 
 let devMock = false;
+let isRunning = false;
 
 let items = {
     clientCoreModules: [],
@@ -43,7 +44,22 @@ function init() {
     }
     run();
 }
-let isRunning = false;
+function clear() {
+    items = {
+        clientCoreModules: [],
+        clientCoreComponents: [],
+        clientPreScript: [],
+        clientPreCss: [],
+        clientComponents: [],
+        clientModules: [],
+        clientPostCss: [],
+        clientPostScript: [],
+    };
+    inactiveItems = {
+        clientCoreModules: [],
+        clientCoreComponents: []
+    };
+}
 function fileWatchHandler(eventType, filename) {
     if (!isRunning) {
         if (filename) {
@@ -56,7 +72,8 @@ function fileWatchHandler(eventType, filename) {
         }, 2000);
     }
 }
-function  run() {
+function run() {
+    clear();
     /* region create header tags pre section */
     let a;
     a = config.client.coreModules;
