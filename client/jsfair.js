@@ -151,7 +151,7 @@
         a.then(function() {
             if (typeof fn === "function") fn();
         }, function (e) {
-            console.error("Component loading error!");
+            console.error("Component loading error!", a);
             throw e;
             // console.trace(e);
         })
@@ -234,7 +234,7 @@
                             Components[componentName].init.call(ctx, global, $(ele), args);
                             loadSubComps(ele).then(() => {
                                 if (ctx.hasOwnProperty("onLoad") && typeof ctx.onLoad === "function") {
-                                    ctx.onLoad();
+                                    ctx.onLoad($(ele));
                                 }
                                 //global.onComponentLoaded.next(componentName);
                                 resolve();

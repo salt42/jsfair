@@ -1,11 +1,11 @@
 "use strict";
-const fs    = require('fs');
-let config  = require('jsfair/config');
-let log     = require('jsfair/log')("autoHeader".yellow);
+const fs = require('fs');
+let config = require('jsfair/config');
+let log = require('jsfair/log')("autoHeader".yellow);
 let compMan = require('./componentManager');
 let tagEnd = '\r\n\t\t';
 
-let templates ="";
+let templates = "";
 
 
 // config.registerConfig({
@@ -13,7 +13,8 @@ let templates ="";
 //         deinValue: "default value"
 //     }
 // });
-hookIn.http_init(function(app) {
+function build(app) {
+    global.headerIncludes = '<script src="/jsfair/browserBridge.js"></script>' + tagEnd;
     global.headerIncludes += '<script src="/jsfair/libsmin.js"></script>' + tagEnd;
     global.headerIncludes += '<script src="/jsfair/jsfair.js"></script>' + tagEnd;
 
@@ -46,17 +47,21 @@ hookIn.http_init(function(app) {
         global.headerIncludes += createScriptTag(comp.js);
     }
     global.headerIncludes += templates;
-});
+}
+hookIn.http_init(build);
+module.exports = {
+    reload: build
+}
 /* region auxiliaries */
 function createScriptTag(path) {
-    return (path === null) ? "" : '<script src="' + path + '"></script>'+ tagEnd;
+    return (path === null) ? "" : '<script src="' + path + '"></script>' + tagEnd;
 }
 function createCssTag(path) {
     return (path === null) ? "" : '<link href="' + path + '" rel="stylesheet">' + tagEnd;
 }
 function createHTMLTag(path, name) {
     if (path === null) return "";
-    let html =  fs.readFileSync(path,'utf8');
+    let html = fs.readFileSync(path, 'utf8');
     let compName = camelToDash(name);
     return '<template id="template-' + compName + '-main">' + html + '</template>' + tagEnd;
 }
