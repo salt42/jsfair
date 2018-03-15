@@ -9,20 +9,8 @@ const Path    = require("path");
 let devMock = false;
 let isRunning = false;
 
-let items = {
-    clientCoreModules: [],
-    clientCoreComponents: [],
-    clientPreScript: [],
-    clientPreCss: [],
-    clientComponents: [],
-    clientModules: [],
-    clientPostCss: [],
-    clientPostScript: [],
-};
-let inactiveItems = {
-    clientCoreModules: [],
-    clientCoreComponents: []
-};
+let items = {};
+let inactiveItems = {};
 
 // config.registerConfig({
 //     client: {
@@ -30,6 +18,7 @@ let inactiveItems = {
 //     }
 // });
 function init() {
+    clear();
     let paths = [];
     paths.push(Path.join(jsfairPath, "client/modules"));
     paths.push(Path.join(jsfairPath, "client/component"));
