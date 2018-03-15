@@ -227,17 +227,17 @@
         }
         return $section.data("context");
     };
-
     /**
      * @memberOf Global
      * @param {jQuery} $element
      * @param {function} fn
      * @param args
      */
-    global.loadComponent = function($element, fn, args) {
+    function loadComponent($element, fn, args) {
         let scope = getScope($element[0]);
         initComp($element[0], scope, args);
-    };
+    }
+    global.loadComponent = loadComponent;
     function getScope(element) {
         while(element = element.parentNode) {
             if (element.hasOwnProperty("jsFairScope") ) return element.jsFairScope;
@@ -281,8 +281,10 @@
         }
     }
     class Scope {
-        constructor(ref) {
+        constructor(ref, type) {
             let self = this;
+            this.type = type;
+            /** @type {Rx.Subject} */
             this.onDataUpdate = new Rx.Subject();
             this._data = {};
             this.ref = ref;
@@ -401,13 +403,19 @@
             this.children.push(scope);
             scope.parent = this;
         }
-        removeAll() {
+        destroyAllChilds() {
+            if (!this.children) return;
             for (let i = 0; i < this.children.length; i++) {
-                let scope = this.children[i];
-                scope.parent = null;
-                scope.ref = null;
+                this.children[i]._destroy();
             }
             this.children = [];
+        }
+        destroyChild(childScope) {
+            if (!this.children) return;
+            let index = this.children.indexOf(childScope);
+            if (index === false) return;
+            this.children[index]._destroy();
+            this.children.splice(index, 1);
         }
         /**
          * @returns {Component}
@@ -418,6 +426,29 @@
             } else if (this.parent) {
                 return this.parent.getComp();
             }
+        }
+        destroy() {
+            this.parent.destroyChild(this);
+        }
+        _destroy() {
+            this.destroyAllChilds();
+            this.parent = null;
+            if (this.onDataUpdate) this.onDataUpdate.complete();
+            this.onDataUpdate = null;
+            if (this.ref) {
+                if (this.ref.jsFairScope) delete this.ref.jsFairScope;
+                if (this.ref.jsFairComponent) delete this.ref.jsFairComponent;
+            }
+            this.ref = null;
+            this.children = null;
+            this.data = null;
+        }
+        toJSON() {
+            return {
+                type: this.type,
+                children: this.children,
+                data: {}
+            };
         }
     }
 
@@ -464,6 +495,33 @@
         }
     }
     global.initSubTree = initSubTree;
+
+    /**
+     * @memberOf {array<Element> | jquery} Global
+     * @param $nodes
+     */
+    function removeNode($nodes) {
+        if (!$nodes) return;
+        for (let node of $nodes) {
+            cleanTree(node);
+            if (node.jsFairScope) {
+                node.jsFairScope.destroy();
+            }
+            if (node.parentNode) node.parentNode.removeChild(node);
+        }
+    }
+    global.removeNode = removeNode;
+    function cleanTree(node) {
+        node = node.firstChild;
+        while (node) {
+            if (node.jsFairScope) {
+                node.jsFairScope.destroy();
+            } else {
+                cleanTree(node);
+            }
+            node = node.nextSibling;
+        }
+    }
     /**
      * @memberOf Global
      * @param {HTMLElement} node
@@ -473,10 +531,11 @@
     function initComp(node, scope, args) {
         let componentName = node.tagName.toLowerCase();
         componentName = componentName.toLowerCase();
-        if (node.jsFairComponent) return;
+        if (node.hasOwnProperty("jsFairComponent") ) {
+            return;
+        }
         if (!Components.hasOwnProperty(componentName)) throw ("no component with name: " + componentName);
-
-        let compScope = new Scope(node);
+        let compScope = new Scope(node, "Component_" + componentName);
         scope.add(compScope);
         let ctx = new Component(componentName, compScope);
         ctx.$ele = $(node);
@@ -507,7 +566,7 @@
     global.initComp = initComp;
 
     window.onload = function() {
-        rootScope = new Scope(document.body);
+        rootScope = new Scope(document.body, "ROOT");
         //init modules
         for(let module in Modules) {
             if (!Modules.hasOwnProperty(module)) continue;
@@ -518,13 +577,22 @@
         global.onModulesLoaded.next();
 
         // load components
-        console.time("krass");
         initSubTree(document.body, rootScope);
-        console.timeEnd("krass");
         global.onPageLoaded.next();
+
+
+
         window.G = {
             rootScope: rootScope
         };
+
+        // var data = { type: "FROM_PAGE", text: "Hello from the webpage!" };
+        // window.postMessage(data, "*");
+        sendToInspector("onPageLoaded", "");
+        sendToInspector("onTreeChanged", rootScope);
+        global.AppState.onAppStateChanged.subscribe(()=> {
+            sendToInspector("onTreeChanged", rootScope);
+        });
     };
 
     window.jsFair = {};
@@ -532,6 +600,29 @@
     window.jsFair.Scope = Scope;
     window.jsFair.Component = Component;
     window.jsFair.BaseComponent = BaseComponent;
+
+    function sendToInspector(com, data) {
+        let d = {
+            source: "PAGE",
+            com: com,
+            body: JSON.stringify(data)
+        };
+        window.postMessage(d, "*");
+    }
+    function receiveMessage(event) {
+        event = event.detail;
+        switch (event.com) {
+            case 'getTree':
+                sendToInspector("onTreeChanged", rootScope);
+                break;
+            case 'config':
+                if (!event.body || !event.body.key) return;
+                //@todo set config value
+                break;
+        }
+    }
+    window.addEventListener("jsfairCom", receiveMessage);
+
 })();
 
 defineDirective({ name: "#for" }, function (node, attr, scope) {
@@ -558,7 +649,7 @@ defineDirective({ name: "#for" }, function (node, attr, scope) {
     // function remove(items) {}
     function redraw() {
         //@todo remove old scopes from scope
-        forScope.removeAll();
+        forScope.destroyAllChilds();
         _data = scope.resolve(a[3]);
         let fragment = document.createDocumentFragment();
         for (let i = 0; i < _data.length; i++) {

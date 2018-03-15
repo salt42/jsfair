@@ -148,9 +148,7 @@ define("AppState", function(global) {
      * @param {string} url
      */
     this.goToUrl = function (url) {
-        console.log("GoToUrl", url);
         match(url, appStates, (state) => {
-            console.log(state);
             push({
                 name: state[state.length-1],
                 url: url,
@@ -170,8 +168,9 @@ define("AppState", function(global) {
         }
         //push init state
         let startUrl = location.href.slice(location.href.indexOf(location.host) + location.host.length);
-        this.goToUrl(startUrl);
+        // this.goToUrl(startUrl);
     }.bind(this));
+
     window.onpopstate = function(event) {
         match(event.state.url, appStates, (state) => { });
     }.bind(this);

@@ -72,8 +72,8 @@
         //was schade ist is das ich keinen weg gefunden hab eigene templates anzulegen
         if (_compName) {
             //load default or static comp
-            let $comp = $("<" + _compName + ">");
-            template.append($comp);
+            $loadedComp = $("<" + _compName + ">");
+            template.append($loadedComp);
         }
 
         this.onLoad = () => {};
@@ -84,12 +84,12 @@
             }
             if (_compName === compName) {
                 if (typeof fn === "function") fn();
+                return;
             }
-            //@todo check if comp exists
             if (persistent && $loadedComp) {
-                $loadedComp.detach();
+                $loadedComp.detach();//@todo set scope to detached
             } else {
-                $element.empty();
+                global.removeNode($loadedComp);
             }
             _compName = compName;
             if (persistent && persistentComps.has(compName)) {
@@ -104,7 +104,7 @@
             }
         };
         this.getComponent = () => {
-            if (!$loadedComp && !$loadedComp.length) return false;
+            if (!$loadedComp || !$loadedComp.length) return false;
             return $loadedComp.getComponent();
         };
         this.disableSection = () => {
