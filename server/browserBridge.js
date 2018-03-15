@@ -2,6 +2,7 @@ const WebSocket = require('ws');
 const log = require('./jsfair/log')("browserBridge");
 let wss;
 let port = 65442;
+let debug = false;
 
 let isPortTaken = function(port, fn) {
     let net = require('net');
@@ -21,12 +22,11 @@ function create() {
     //setup dev websocket server
     wss = new WebSocket.Server({port: port});
     wss.on('connection', function connection(ws) {
-
         ws.on('open', function incoming(message) {
-            // log('received: %s', message);
+            if (debug) log('received: %s', message);
         });
         ws.on('message', function incoming(message) {
-            // log('received: %s', message);
+            if (debug) log('received: %s', message);
         });
         ws.on('close', function incoming(message) {
             // log('cient closed: %s', message);
@@ -34,6 +34,9 @@ function create() {
         ws.send(JSON.stringify({
             com: "handshake",
         }));
+        ws.on('error', function(e){
+            if (debug) log.error(e);
+        });
     });
     wss.broadcast = function broadcast(data) {
         data = JSON.stringify(data);

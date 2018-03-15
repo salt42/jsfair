@@ -3,24 +3,14 @@ const core    = require ('jsfair/coreAddOns');
 const config  = require('jsfair/config');
 const log     = require('jsfair/log')("compManager".yellow);
 const fs      = require("fs");
+const fileWatcher = require("chokidar");
 const Path    = require("path");
 
 let devMock = false;
+let isRunning = false;
 
-let items = {
-    clientCoreModules: [],
-    clientCoreComponents: [],
-    clientPreScript: [],
-    clientPreCss: [],
-    clientComponents: [],
-    clientModules: [],
-    clientPostCss: [],
-    clientPostScript: [],
-};
-let inactiveItems = {
-    clientCoreModules: [],
-    clientCoreComponents: []
-};
+let items = {};
+let inactiveItems = {};
 
 // config.registerConfig({
 //     client: {
@@ -28,6 +18,7 @@ let inactiveItems = {
 //     }
 // });
 function init() {
+    clear();
     let paths = [];
     paths.push(Path.join(jsfairPath, "client/modules"));
     paths.push(Path.join(jsfairPath, "client/component"));
@@ -38,15 +29,29 @@ function init() {
         paths.push(createAbsolutePath(config.client.componentPaths[i]) );
     }
 
-    for (let i = 0; i < paths.length; i++) {
-        fs.watch(paths[i], fileWatchHandler);
-    }
+    fileWatcher.watch(paths, {ignored: /(^|[\/\\])\../}).on('change', fileWatchHandler);
+
     run();
 }
-let isRunning = false;
-function fileWatchHandler(eventType, filename) {
+function clear() {
+    items = {
+        clientCoreModules: [],
+        clientCoreComponents: [],
+        clientPreScript: [],
+        clientPreCss: [],
+        clientComponents: [],
+        clientModules: [],
+        clientPostCss: [],
+        clientPostScript: [],
+    };
+    inactiveItems = {
+        clientCoreModules: [],
+        clientCoreComponents: []
+    };
+}
+function fileWatchHandler(path, stats) {
     if (!isRunning) {
-        if (filename) {
+        if (path) {
             run();
             process.stdout.write("NEED_CLIENT_RELOAD\n");
         }
@@ -56,7 +61,8 @@ function fileWatchHandler(eventType, filename) {
         }, 2000);
     }
 }
-function  run() {
+function run() {
+    clear();
     /* region create header tags pre section */
     let a;
     a = config.client.coreModules;
