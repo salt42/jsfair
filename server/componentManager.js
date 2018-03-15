@@ -3,6 +3,7 @@ const core    = require ('jsfair/coreAddOns');
 const config  = require('jsfair/config');
 const log     = require('jsfair/log')("compManager".yellow);
 const fs      = require("fs");
+const fileWatcher = require("chokidar");
 const Path    = require("path");
 
 let devMock = false;
@@ -39,9 +40,8 @@ function init() {
         paths.push(createAbsolutePath(config.client.componentPaths[i]) );
     }
 
-    for (let i = 0; i < paths.length; i++) {
-        fs.watch(paths[i], fileWatchHandler);
-    }
+    fileWatcher.watch(paths, {ignored: /(^|[\/\\])\../}).on('change', fileWatchHandler);
+
     run();
 }
 function clear() {
@@ -60,9 +60,9 @@ function clear() {
         clientCoreComponents: []
     };
 }
-function fileWatchHandler(eventType, filename) {
+function fileWatchHandler(path, stats) {
     if (!isRunning) {
-        if (filename) {
+        if (path) {
             run();
             process.stdout.write("NEED_CLIENT_RELOAD\n");
         }
