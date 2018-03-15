@@ -147,9 +147,9 @@ define("AppState", function(global) {
      * @param {string} url
      */
     this.goToUrl = function (url) {
-        console.log("GoToUrl", url);
+        if(debug) console.log("GoToUrl", url);
         match(url, appStates, (state) => {
-            console.log(state);
+            if(debug) console.log(state);
             push({
                 name: state[state.length-1],
                 url: url,
