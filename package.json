@@ -23,6 +23,7 @@
     "deepmerge": "^2.0.1",
     "express": "^4.16.2",
     "express-hbs": "^1.0.4",
+    "filewatcher": "^3.0.1",
     "hbs": "^4.0.1",
     "js-beautify": "^1.7.5",
     "node-gyp": "^3.6.2",
