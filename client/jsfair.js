@@ -30,7 +30,6 @@
     let Modules = {},
         Components = {},
         ComponentNames = [],
-        loadingCompsCtx = [],
         TemplateCache = {
             hash: [],
             templates: [],
@@ -229,13 +228,14 @@
     };
     /**
      * @memberOf Global
-     * @param {jQuery} $element
+     * @param {jQuery} element
      * @param {function} fn
      * @param args
      */
-    function loadComponent($element, fn, args) {
-        let scope = getScope($element[0]);
-        initComp($element[0], scope, args);
+    function loadComponent(element, fn, args) {
+        element = $(element)[0];
+        let scope = getScope(element);
+        initComp(element, scope, args);
     }
     global.loadComponent = loadComponent;
     function getScope(element) {
@@ -454,7 +454,7 @@
 
     /**
      * @memberOf Global
-     * @param {HTMLElement|DocumentFragment|HTMLBaseElement} node
+     * @param {Element|DocumentFragment} node
      * @param {Scope} scope
      */
     function initSubTree(node, scope) {
@@ -524,7 +524,7 @@
     }
     /**
      * @memberOf Global
-     * @param {HTMLElement} node
+     * @param {Element} node
      * @param {Scope} scope
      * @param args
      */
