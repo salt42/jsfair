@@ -214,15 +214,28 @@ function readCompDirectory(name, path) {
     let scriptPath = noExt + ".js";
     let sp = fs.existsSync(scriptPath);
     let sDir = fs.statSync(path).isDirectory();
+    let htmls = [];
 
     if (!sp && !sDir) throw new Error("Component path " +path+ " doesn't exist");
     if(sp){
+        let compDir = fs.readdirSync(path);
+        for (let j = 0; j < compDir.length; j++) {
+            let compSubDir = Path.join(path, compDir[j]);
+            if(!fs.statSync(compSubDir).isDirectory()){
+                if(Path.extname(compSubDir) === ".html"){
+                    htmls.push({
+                        path: compSubDir,
+                        name: Path.basename(compSubDir, ".html")
+                    });
+                }
+            }
+        }
         items.clientComponents.push({
             type:    "client::common::component",
             name:    name,
             js:      createRelativePath(scriptPath),
             css:     (fs.existsSync(noExt + ".css" )) ? createRelativePath(noExt + ".css")  : null,
-            html:    (fs.existsSync(noExt + ".html")) ? (noExt + ".html") : null,
+            html:    (htmls.length === 0) ? null : htmls,
         });
     }
     let subdir = fs.readdirSync(path);// Returns an array of filenames excluding '.' and '..'.
