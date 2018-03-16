@@ -59,11 +59,19 @@ function createScriptTag(path) {
 function createCssTag(path) {
     return (path === null) ? "" : '<link href="' + path + '" rel="stylesheet">' + tagEnd;
 }
-function createHTMLTag(path, name) {
-    if (path === null) return "";
-    let html = fs.readFileSync(path, 'utf8');
+function createHTMLTag(htmlArray, name) {
+    let tags = "";
+    if (htmlArray === null) return tags;
     let compName = camelToDash(name);
-    return '<template id="template-' + compName + '-main">' + html + '</template>' + tagEnd;
+    for (let i = 0; i < htmlArray.length; i++) {
+        let obj = htmlArray[i];
+        let subName = camelToDash(obj.name);
+        if(obj.name === name) subName = "main";
+        let html = fs.readFileSync(obj.path, 'utf8');
+        // tags +=`<!--<template id="template-${{compName}}-${{subName}}">${{html}}</template>-->${{tagEnd}}`;
+        tags +='<template id="template-' + compName + '-' + subName + '">' + html + '</template>' + tagEnd;
+    }
+    return tags;
 }
 
 function camelToDash(str) {
