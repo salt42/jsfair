@@ -92,8 +92,6 @@
                 global.removeNode($loadedComp);
             }
             _compName = compName;
-            console.log("load persistent?: ", persistent, compName)
-            console.log("load persistent?: ", persistentComps.has(compName) )
             if (persistent && persistentComps.has(compName)) {
                 //laode this one
                 $loadedComp = persistentComps.get(compName);

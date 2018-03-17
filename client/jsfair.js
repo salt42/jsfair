@@ -296,9 +296,14 @@
             this.scope.setData(data);
         }
     }
+
+    function getUID() {
+        return Math.floor(1 + Math.random() * 0xfffffffff).toString(16);
+    }
     class Scope {
         constructor(ref, type) {
             let self = this;
+            this.ID = getUID();
             this.type = type;
             /** @type {Rx.Subject} */
             this.onDataUpdate = new Rx.Subject();
@@ -316,44 +321,8 @@
                             if (!target.hasOwnProperty(name)) return;
                             return target[name];
                     }
-                    // return function(...args) {
-                    //     if (name === "init") return init(...args);
-                    //     if (dbMethods.hasOwnProperty(name) && typeof dbMethods[name] === "function") {
-                    //         return dbMethods[name].call(dbMethods, ...args);
-                    //     } else {
-                    //         let e = new Error(("No function registered with name: " + name).red);
-                    //         log(e.stack);
-                    //     }
-                    // }
                 },
                 apply(target, thisArg, argumentsList) {
-                    // if (argumentsList.length < 1) throw "##";
-                    // //set data
-                    // let data = argumentsList[0];
-                    // let props = [];
-                    // for (let prop in data) {
-                    //     if (!data.hasOwnProperty(prop)) continue;
-                    //     props.push(props);
-                    //     if (typeof data[prop] === "object") {
-                    //         if (data[prop] instanceof Rx.Observable) {
-                    //             //link pipe
-                    //             target[prop] = null;
-                    //             observerHandler(data, prop);
-                    //             continue;
-                    //         }
-                    //     }
-                    //     target[prop] = data[prop];
-                    // }
-                    // // console.log(data)
-                    // // console.dir(target)
-                    // self.onDataUpdate.next(props);
-                    // function observerHandler(data, prop) {
-                    //     data[prop].subscribe((d) => {
-                    //         //set data
-                    //         target[prop] = d;
-                    //         onDataUpdate.next(prop);
-                    //     })
-                    // }
                 },
                 set(target, property, value, receiver) {
                     target[property] = value;
@@ -362,7 +331,6 @@
                 },
                 has() {},
                 // apply(target, thisArg, argumentsList) {
-                //     //@todo call method on component context or in data?
                 //     return;
                 // },
                 construct() { throw "It's not allowed to instantiate data" }
@@ -461,9 +429,10 @@
         }
         toJSON() {
             return {
+                ID: this.ID,
                 type: this.type,
                 children: this.children,
-                data: {}
+                data: this._data
             };
         }
     }
@@ -611,26 +580,12 @@
             knockOutCount++;
             if (knockOutCount > 10) break;
         }
-        // for(let module in Modules) {
-        //     if (!Modules.hasOwnProperty(module)) continue;
-        //     let context = {};
-        //     Modules[module].init.call(context, global);
-        //     global[module] = context;
-        // }
         global.onModulesLoaded.next();
 
         // load components
         initSubTree(document.body, rootScope);
         global.onPageLoaded.next();
 
-
-
-        window.G = {
-            rootScope: rootScope
-        };
-
-        // var data = { type: "FROM_PAGE", text: "Hello from the webpage!" };
-        // window.postMessage(data, "*");
         sendToInspector("onPageLoaded", "");
         sendToInspector("onTreeChanged", rootScope);
         global.AppState.onAppStateChanged.subscribe(()=> {
