@@ -544,8 +544,6 @@
             if (ctx.hasOwnProperty("onLoad") && typeof ctx.onLoad === "function") {
                 ctx.onLoad($(node));
             }
-            //global.onComponentLoaded.next(componentName);
-
         });
     }
     global.initComp = initComp;
