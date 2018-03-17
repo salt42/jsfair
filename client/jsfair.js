@@ -741,7 +741,6 @@ defineDirective({ name: "#on" }, function (node, attr, scope) {
 defineDirective({ name: "#data" }, function (node, attr, scope) {
     let a = attr.split(":");
     if (a.length !== 2) throw "Error in #data";//@niLive
-
     node.dataset[a[0]] = scope.resolve(a[1]);
     node.removeAttribute("#data");
     scope.data.onUpdate.subscribe((prop) => {
@@ -752,5 +751,15 @@ defineDirective({ name: "#value" }, function (node, attr, scope) {
     node.value = scope.resolve(attr);
     scope.data.onUpdate.subscribe((prop) => {
         if (prop === attr.split(".")[0] ) node.value = scope.resolve(attr);
+    });
+});
+defineDirective({ name: "#appstate" }, function (node, attr, scope) {
+    let a = attr.split(":");
+    console.log('directive appstate', a);
+    if (a.length !== 2) throw "Error in #appState";//@niLive
+    node.setAttribute(a[0], scope.resolve(a[1]));
+    node.removeAttribute("#appState");
+    scope.data.onUpdate.subscribe((prop) => {
+        if (prop === a[1].split(".")[0] ) node.setAttribute(a[0], scope.resolve(a[1]) );
     });
 });
