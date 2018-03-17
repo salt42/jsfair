@@ -19,19 +19,15 @@ global.headerIncludes = "";
 hbs.registerHelper('headerIncludes', function(text, options) {
     return new hbs.SafeString(headerIncludes);
 });
-// Use `.hbs` for extensions and find partials in `views/partials`.
 app.engine('hbs', hbs.express4({
     // partialsDir: __dirname + '/views/partials'
     beautify: false,
 }));
-//aber mit den helper funcs eventuel noch
-//eventuel einfach ein anderes plugin versuchen,
+
 app.set('view engine', 'hbs');
 app.set('views', path.join(ROOT_PATH, config.server.http.viewsDir));
 
-// uncomment after placing your favicon in /public
 //app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
-// app.use(logger('dev'));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
@@ -40,8 +36,6 @@ for (let i = 0; i < config.server.http.staticDirs.length; i++) {
     app.use(express.static(path.join(ROOT_PATH, config.server.http.staticDirs[i])));
 }
 app.use("/jsfair", express.static(path.join(jsfairPath, 'client')));
-
-
 
 let isPortTaken = function(port, fn) {
     let net = require('net');

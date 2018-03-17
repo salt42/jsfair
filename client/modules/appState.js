@@ -23,7 +23,8 @@ define("AppState", function(global) {
      * @memberOf Global.AppState
      */
     this.onAppStateChanged = new Rx.ReplaySubject();
-    let debug = false;
+    let debug = false;//@notLive
+    let benchmark = false;//@notLive
     let self = this;
     let appStates = [
         {
@@ -75,11 +76,11 @@ define("AppState", function(global) {
                 end: false,
                 // strict: true
             });
-            if (debug) console.log("try match: '%s'  ON  '%s' ", state.url, url);
+            if (debug) console.log("try match: '%s'  ON  '%s' ", state.url, url);//@notLive
             let r = re.exec(url);
 
             if(r) {
-                if (debug) console.log("matched: ", url, state);
+                if (debug) console.log("matched: ", url, state);//@notLive
                 let args = {};
                 for (let k = 0; k < keys.length; k++) {
                     args[keys[k].name] = r[k + 1];
@@ -91,7 +92,7 @@ define("AppState", function(global) {
                 _result.push(stateEvent);
                 /*load comps*/
                 if(state.sections) {
-                    if (debug) console.log("load sections: ", state.sections);
+                    if (debug) console.log("load sections: ", state.sections);//@notLive
                     let wait = [];
                     for (let i = 0; i < state.sections.length; i++) {
                         $("section#" + state.sections[i][0])
@@ -108,12 +109,12 @@ define("AppState", function(global) {
                     Promise.all(wait).then(function () {
                         self.onAppStateChanged.next(stateEvent);
                         if(state.sub) {
-                            if (debug) console.log("match subs");
+                            if (debug) console.log("match subs");//@notLive
                             url = url.replace(r[0], "");
-                            if (debug) console.log(url, state.sub, _result);
+                            if (debug) console.log(url, state.sub, _result);//@notLive
                             match(url, state.sub, fn, _result);
                         } else {
-                            if (debug) console.log("matching completed");
+                            if (debug) console.log("matching completed");//@notLive
                             if (typeof fn === "function") fn(_result);
                         }
                     }.bind(this));
@@ -121,20 +122,20 @@ define("AppState", function(global) {
                 } else {
                     self.onAppStateChanged.next(stateEvent);
                     if(state.sub) {
-                        if (debug) console.log("match subs");
+                        if (debug) console.log("match subs");//@notLive
                         url = url.replace(r[0], "");
                         match(url, state.sub, fn, _result);
                     } else {
-                        if (debug) console.log("matching completed");
+                        if (debug) console.log("matching completed");//@notLive
                         if (typeof fn === "function") fn(_result);
                     }
                     return;
                 }
             } else {
-                if (debug) console.log("faild matching: ", url, state);
+                if (debug) console.log("faild matching: ", url, state);//@notLive
             }
         }
-        if (debug) console.log("matching completed");
+        if (debug) console.log("matching completed");//@notLive
         if (typeof fn === "function") fn(_result);
     }
     /**
@@ -148,14 +149,16 @@ define("AppState", function(global) {
      * @param {string} url
      */
     this.goToUrl = function (url) {
-        if(debug) console.log("GoToUrl", url);
+        if(debug) console.log("GoToUrl", url);//@notLive
+        if(benchmark) console.time("AppState Time");//@notLive
         match(url, appStates, (state) => {
-            if(debug) console.log(state);
+            if(debug) console.log(state);//@notLive
             push({
                 name: state[state.length-1],
                 url: url,
                 matches: state
             });
+            if(benchmark) console.timeEnd("AppState Time");//@notLive
         });
     };
 

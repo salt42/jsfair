@@ -28,9 +28,9 @@
     /** @type {Scope} */
     let rootScope;
     let Modules = {},
+        ModuleNames = [],
         Components = {},
         ComponentNames = [],
-        loadingCompsCtx = [],
         TemplateCache = {
             hash: [],
             templates: [],
@@ -71,14 +71,15 @@
                 while ((match = re.exec(node.textContent)) != null) {
                     staticParts.push(node.textContent.substring(lastIndex, match.index));
                     properties.push(match[1]);
-                    lastIndex = lastIndex + match[0].length;
+                    // lastIndex = lastIndex + match[0].length;
+                    lastIndex = match.index + match[0].length;
                 }
                 // console.log("new text:", staticParts, properties)
                 function update() {
                     let res = "";
                     for (let i = 0; i < staticParts.length; i++) {
                         let v = scope.resolve(properties[i]);
-                        res += staticParts[i] + ((v === undefined) ? "{{" + properties[i] + "}}": scope.resolve(properties[i]) );
+                        res += staticParts[i] + ((v === undefined) ? "{{!!" + properties[i] + "}}": v );
                     }
                     // console.log(properties, scopeStack, ctx.data);
                     // console.log(res);
@@ -136,12 +137,24 @@
         "#text",
         "#css"
     ];
-    //defines a core module
-    window.define = function(moduleName, initMethod) {
-        if(Modules.hasOwnProperty(moduleName)) {
-            console.error("Module name '"+ moduleName +"' already taken");
+    /**
+     * Define a jsFair module
+     * @param meta
+     * @param initMethod
+     */
+    window.define = function(meta, initMethod) {
+        let name = "";
+        if (typeof meta === "string" ) {
+            name = meta;
+            meta = { name: name, };
+        } else {
+            name = meta.name;
         }
-        Modules[moduleName] = initMethod;
+        if (!meta.dependencies) meta.dependencies = [];
+        if (Modules.hasOwnProperty(name)) console.error("Module name '"+ name +"' already taken");//@notLive
+        meta.init = initMethod;
+        Modules[name] = meta;
+        ModuleNames.push(name);
     };
 
     /**
@@ -229,13 +242,14 @@
     };
     /**
      * @memberOf Global
-     * @param {jQuery} $element
+     * @param {jQuery} element
      * @param {function} fn
      * @param args
      */
-    function loadComponent($element, fn, args) {
-        let scope = getScope($element[0]);
-        initComp($element[0], scope, args);
+    function loadComponent(element, fn, args) {
+        element = $(element)[0];
+        let scope = getScope(element);
+        initComp(element, scope, args);
     }
     global.loadComponent = loadComponent;
     function getScope(element) {
@@ -279,10 +293,18 @@
         model(data) {
             this.scope.setData(data);
         }
+        setData(data) {
+            this.scope.setData(data);
+        }
+    }
+
+    function getUID() {
+        return Math.floor(1 + Math.random() * 0xfffffffff).toString(16);
     }
     class Scope {
         constructor(ref, type) {
             let self = this;
+            this.ID = getUID();
             this.type = type;
             /** @type {Rx.Subject} */
             this.onDataUpdate = new Rx.Subject();
@@ -300,44 +322,8 @@
                             if (!target.hasOwnProperty(name)) return;
                             return target[name];
                     }
-                    // return function(...args) {
-                    //     if (name === "init") return init(...args);
-                    //     if (dbMethods.hasOwnProperty(name) && typeof dbMethods[name] === "function") {
-                    //         return dbMethods[name].call(dbMethods, ...args);
-                    //     } else {
-                    //         let e = new Error(("No function registered with name: " + name).red);
-                    //         log(e.stack);
-                    //     }
-                    // }
                 },
                 apply(target, thisArg, argumentsList) {
-                    // if (argumentsList.length < 1) throw "##";
-                    // //set data
-                    // let data = argumentsList[0];
-                    // let props = [];
-                    // for (let prop in data) {
-                    //     if (!data.hasOwnProperty(prop)) continue;
-                    //     props.push(props);
-                    //     if (typeof data[prop] === "object") {
-                    //         if (data[prop] instanceof Rx.Observable) {
-                    //             //link pipe
-                    //             target[prop] = null;
-                    //             observerHandler(data, prop);
-                    //             continue;
-                    //         }
-                    //     }
-                    //     target[prop] = data[prop];
-                    // }
-                    // // console.log(data)
-                    // // console.dir(target)
-                    // self.onDataUpdate.next(props);
-                    // function observerHandler(data, prop) {
-                    //     data[prop].subscribe((d) => {
-                    //         //set data
-                    //         target[prop] = d;
-                    //         onDataUpdate.next(prop);
-                    //     })
-                    // }
                 },
                 set(target, property, value, receiver) {
                     target[property] = value;
@@ -346,7 +332,6 @@
                 },
                 has() {},
                 // apply(target, thisArg, argumentsList) {
-                //     //@todo call method on component context or in data?
                 //     return;
                 // },
                 construct() { throw "It's not allowed to instantiate data" }
@@ -445,16 +430,17 @@
         }
         toJSON() {
             return {
+                ID: this.ID,
                 type: this.type,
                 children: this.children,
-                data: {}
+                data: this._data
             };
         }
     }
 
     /**
      * @memberOf Global
-     * @param {HTMLElement|DocumentFragment|HTMLBaseElement} node
+     * @param {Element|DocumentFragment} node
      * @param {Scope} scope
      */
     function initSubTree(node, scope) {
@@ -524,7 +510,7 @@
     }
     /**
      * @memberOf Global
-     * @param {HTMLElement} node
+     * @param {Element} node
      * @param {Scope} scope
      * @param args
      */
@@ -559,8 +545,6 @@
             if (ctx.hasOwnProperty("onLoad") && typeof ctx.onLoad === "function") {
                 ctx.onLoad($(node));
             }
-            //global.onComponentLoaded.next(componentName);
-
         });
     }
     global.initComp = initComp;
@@ -568,11 +552,32 @@
     window.onload = function() {
         rootScope = new Scope(document.body, "ROOT");
         //init modules
-        for(let module in Modules) {
-            if (!Modules.hasOwnProperty(module)) continue;
-            let context = {};
-            Modules[module].call(context, global);
-            global[module] = context;
+        let loaded = [];
+        let toLoad = ModuleNames.slice();
+        let knockOutCount = 0;
+        while(toLoad.length !== 0) {
+            let rest = [];
+            for (let i = 0; i < toLoad.length; i++) {
+                let moduleName = toLoad[i];
+                let module = Modules[moduleName];
+                let canLoad = true;
+                for (let dep of module.dependencies) {
+                    if (loaded.indexOf(dep) > -1) continue;
+                    canLoad = false;
+                    break;
+                }
+                if (canLoad) {
+                    let context = {};
+                    Modules[moduleName].init.call(context, global);
+                    global[moduleName] = context;
+                    loaded.push(moduleName);
+                } else {
+                    rest.push(moduleName);
+                }
+            }
+            toLoad = rest;
+            knockOutCount++;
+            if (knockOutCount > 10) break;
         }
         global.onModulesLoaded.next();
 
@@ -580,14 +585,6 @@
         initSubTree(document.body, rootScope);
         global.onPageLoaded.next();
 
-
-
-        window.G = {
-            rootScope: rootScope
-        };
-
-        // var data = { type: "FROM_PAGE", text: "Hello from the webpage!" };
-        // window.postMessage(data, "*");
         sendToInspector("onPageLoaded", "");
         sendToInspector("onTreeChanged", rootScope);
         global.AppState.onAppStateChanged.subscribe(()=> {
@@ -634,7 +631,7 @@ defineDirective({ name: "#for" }, function (node, attr, scope) {
 
     //attr auslesen
     let a = attr.match(/(\w*) (of|in|on) (\w*)/);
-    if (a.length !== 4) throw "Error in #for";//@niLive
+    if (a.length !== 4) throw "Error in #for";//@notLive
     let _data = scope.resolve(a[3]) || [];
     let forScope = new jsFair.Scope(node);
     scope.add(forScope);
@@ -711,7 +708,7 @@ defineDirective({ name: "#on" }, function (node, attr, scope) {
         let filter = e[1];
         event = (isFilter)? e[2]: e[1];
         match = event.match(/(\w*)\(([\w,\s.]*)\)/);
-        // if (match.length !== 4) throw "Error in #for";//@niLive
+        // if (match.length !== 4) throw "Error in #for";//@notLive
         // while ((match = /(\w*):(\w*)\(([\w,\s.]*)\)/g.exec(attr)) != null) {}
         let eventType = e[0];
         let eventHandler = match[1];
@@ -740,7 +737,8 @@ defineDirective({ name: "#on" }, function (node, attr, scope) {
 });
 defineDirective({ name: "#data" }, function (node, attr, scope) {
     let a = attr.split(":");
-    if (a.length !== 2) throw "Error in #data";//@niLive
+    if (a.length !== 2) throw "Error in #data";//@notLive
+
     node.dataset[a[0]] = scope.resolve(a[1]);
     node.removeAttribute("#data");
     scope.data.onUpdate.subscribe((prop) => {

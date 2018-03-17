@@ -69,11 +69,11 @@
             console.log($element);
             throw new Error("section need id!");
         }
-        //was schade ist is das ich keinen weg gefunden hab eigene templates anzulegen
         if (_compName) {
             //load default or static comp
             $loadedComp = $("<" + _compName + ">");
             template.append($loadedComp);
+            if (persistent) persistentComps.set(_compName, $loadedComp);
         }
 
         this.onLoad = () => {};
