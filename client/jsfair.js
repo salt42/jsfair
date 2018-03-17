@@ -753,13 +753,3 @@ defineDirective({ name: "#value" }, function (node, attr, scope) {
         if (prop === attr.split(".")[0] ) node.value = scope.resolve(attr);
     });
 });
-defineDirective({ name: "#appstate" }, function (node, attr, scope) {
-    let a = attr.split(":");
-    console.log('directive appstate', a);
-    if (a.length !== 2) throw "Error in #appState";//@niLive
-    node.setAttribute(a[0], scope.resolve(a[1]));
-    node.removeAttribute("#appState");
-    scope.data.onUpdate.subscribe((prop) => {
-        if (prop === a[1].split(".")[0] ) node.setAttribute(a[0], scope.resolve(a[1]) );
-    });
-});
