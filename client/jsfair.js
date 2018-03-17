@@ -28,6 +28,7 @@
     /** @type {Scope} */
     let rootScope;
     let Modules = {},
+        ModuleNames = [],
         Components = {},
         ComponentNames = [],
         TemplateCache = {
@@ -135,12 +136,24 @@
         "#text",
         "#css"
     ];
-    //defines a core module
-    window.define = function(moduleName, initMethod) {
-        if(Modules.hasOwnProperty(moduleName)) {
-            console.error("Module name '"+ moduleName +"' already taken");
+    /**
+     * Define a jsFair module
+     * @param meta
+     * @param initMethod
+     */
+    window.define = function(meta, initMethod) {
+        let name = "";
+        if (typeof meta === "string" ) {
+            name = meta;
+            meta = { name: name, };
+        } else {
+            name = meta.name;
         }
-        Modules[moduleName] = initMethod;
+        if (!meta.dependencies) meta.dependencies = [];
+        if (Modules.hasOwnProperty(name)) console.error("Module name '"+ name +"' already taken");//@notLive
+        meta.init = initMethod;
+        Modules[name] = meta;
+        ModuleNames.push(name);
     };
 
     /**
@@ -277,6 +290,9 @@
             // });
         }
         model(data) {
+            this.scope.setData(data);
+        }
+        setData(data) {
             this.scope.setData(data);
         }
     }
@@ -568,12 +584,39 @@
     window.onload = function() {
         rootScope = new Scope(document.body, "ROOT");
         //init modules
-        for(let module in Modules) {
-            if (!Modules.hasOwnProperty(module)) continue;
-            let context = {};
-            Modules[module].call(context, global);
-            global[module] = context;
+        let loaded = [];
+        let toLoad = ModuleNames.slice();
+        let knockOutCount = 0;
+        while(toLoad.length !== 0) {
+            let rest = [];
+            for (let i = 0; i < toLoad.length; i++) {
+                let moduleName = toLoad[i];
+                let module = Modules[moduleName];
+                let canLoad = true;
+                for (let dep of module.dependencies) {
+                    if (loaded.indexOf(dep) > -1) continue;
+                    canLoad = false;
+                    break;
+                }
+                if (canLoad) {
+                    let context = {};
+                    Modules[moduleName].init.call(context, global);
+                    global[moduleName] = context;
+                    loaded.push(moduleName);
+                } else {
+                    rest.push(moduleName);
+                }
+            }
+            toLoad = rest;
+            knockOutCount++;
+            if (knockOutCount > 10) break;
         }
+        // for(let module in Modules) {
+        //     if (!Modules.hasOwnProperty(module)) continue;
+        //     let context = {};
+        //     Modules[module].init.call(context, global);
+        //     global[module] = context;
+        // }
         global.onModulesLoaded.next();
 
         // load components
@@ -634,7 +677,7 @@ defineDirective({ name: "#for" }, function (node, attr, scope) {
 
     //attr auslesen
     let a = attr.match(/(\w*) (of|in|on) (\w*)/);
-    if (a.length !== 4) throw "Error in #for";//@niLive
+    if (a.length !== 4) throw "Error in #for";//@notLive
     let _data = scope.resolve(a[3]) || [];
     let forScope = new jsFair.Scope(node);
     scope.add(forScope);
@@ -711,7 +754,7 @@ defineDirective({ name: "#on" }, function (node, attr, scope) {
         let filter = e[1];
         event = (isFilter)? e[2]: e[1];
         match = event.match(/(\w*)\(([\w,\s.]*)\)/);
-        // if (match.length !== 4) throw "Error in #for";//@niLive
+        // if (match.length !== 4) throw "Error in #for";//@notLive
         // while ((match = /(\w*):(\w*)\(([\w,\s.]*)\)/g.exec(attr)) != null) {}
         let eventType = e[0];
         let eventHandler = match[1];
@@ -740,7 +783,7 @@ defineDirective({ name: "#on" }, function (node, attr, scope) {
 });
 defineDirective({ name: "#data" }, function (node, attr, scope) {
     let a = attr.split(":");
-    if (a.length !== 2) throw "Error in #data";//@niLive
+    if (a.length !== 2) throw "Error in #data";//@notLive
 
     node.dataset[a[0]] = scope.resolve(a[1]);
     node.removeAttribute("#data");
