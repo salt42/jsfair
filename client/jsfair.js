@@ -71,14 +71,15 @@
                 while ((match = re.exec(node.textContent)) != null) {
                     staticParts.push(node.textContent.substring(lastIndex, match.index));
                     properties.push(match[1]);
-                    lastIndex = lastIndex + match[0].length;
+                    // lastIndex = lastIndex + match[0].length;
+                    lastIndex = match.index + match[0].length;
                 }
                 // console.log("new text:", staticParts, properties)
                 function update() {
                     let res = "";
                     for (let i = 0; i < staticParts.length; i++) {
                         let v = scope.resolve(properties[i]);
-                        res += staticParts[i] + ((v === undefined) ? "{{" + properties[i] + "}}": scope.resolve(properties[i]) );
+                        res += staticParts[i] + ((v === undefined) ? "{{!!" + properties[i] + "}}": v );
                     }
                     // console.log(properties, scopeStack, ctx.data);
                     // console.log(res);
