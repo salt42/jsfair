@@ -79,3 +79,33 @@
         return this;
     }
 }(jQuery));
+/**
+ * $namespace window
+ * @param   {string} str
+ * @returns {string}
+ */
+window.toCamelCase = (function (str) {
+        let DEFAULT_REGEX = /[-_]+(.)?/g;
+
+        function toUpper(match, group1) {
+            return group1 ? group1.toUpperCase() : '';
+        }
+        return function (str, delimiters) {
+            return str.replace(delimiters ? new RegExp('[' + delimiters + ']+(.)?', 'g') : DEFAULT_REGEX, toUpper);};
+    })();
+/**
+ * $namespace window
+ * @param   {string} str
+ * @returns {string}
+ */
+window.toUnder_line = (str)=> {
+    return str.replace(/([a-zA-Z])(?=[A-Z])/g, '$1_').toLowerCase();
+};
+/**
+ * $namespace window
+ * @param   {string} str
+ * @returns {string}
+ */
+window.toDash = (str)=> {
+    return str.replace(/([a-zA-Z])(?=[A-Z])/g, '$1-').toLowerCase();
+};
