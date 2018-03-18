@@ -79,6 +79,7 @@
         return this;
     }
 }(jQuery));
+
 /**
  * $namespace window
  * @param   {string} str
@@ -98,7 +99,7 @@ window.toCamelCase = (function (str) {
  * @param   {string} str
  * @returns {string}
  */
-window.toUnder_line = (str)=> {
+window.camelCaseToUnder_line = (str)=> {
     return str.replace(/([a-zA-Z])(?=[A-Z])/g, '$1_').toLowerCase();
 };
 /**
@@ -106,6 +107,6 @@ window.toUnder_line = (str)=> {
  * @param   {string} str
  * @returns {string}
  */
-window.toDash = (str)=> {
+window.camelCaseToDash = (str)=> {
     return str.replace(/([a-zA-Z])(?=[A-Z])/g, '$1-').toLowerCase();
 };
