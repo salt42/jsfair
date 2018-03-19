@@ -1,4 +1,3 @@
-//core
 (function( $ ) {
     /**
      * The jQuery plugin namespace.
@@ -57,43 +56,30 @@
              * @param {Scope} scope
              */
             init: function(node, attr, scope) {
-                //parse and split text
                 let re = /\{\{(.*?)\}\}/g;
                 let match;
                 let staticParts = [];
                 let properties = [];
                 let lastIndex = 0;
 
-                // console.log(node)
-                if (!node.textContent.match(re) ) {
-                    return;
-                }
+                if (!node.textContent.match(re) ) return;
                 while ((match = re.exec(node.textContent)) != null) {
                     staticParts.push(node.textContent.substring(lastIndex, match.index));
                     properties.push(match[1]);
-                    // lastIndex = lastIndex + match[0].length;
                     lastIndex = match.index + match[0].length;
                 }
-                // console.log("new text:", staticParts, properties)
                 function update() {
                     let res = "";
                     for (let i = 0; i < staticParts.length; i++) {
                         let v = scope.resolve(properties[i]);
                         res += staticParts[i] + ((v === undefined) ? "{{!!" + properties[i] + "}}": v );
                     }
-                    // console.log(properties, scopeStack, ctx.data);
-                    // console.log(res);
-                    // console.log(res)
                     node.textContent = res;
                 }
                 update();
                 scope.data.onUpdate.subscribe((prop) => {
                     // if (prop === "" ) {
-                    // console.log("update text")
                     update();
-                    //rerender text and add to element
-
-                    // }
                 });
             }
         },
@@ -257,26 +243,30 @@
             if (element.hasOwnProperty("jsFairScope") ) return element.jsFairScope;
         }
     }
-    function arrayDiff(a, b) {
-        return a.filter(function(i) {return b.indexOf(i) < 0;});
-    }
     class BaseComponent {
-        constructor(name, scope) {
+        constructor(name) {
             /** typeof {String} */
             this.name = name;
             /** typeof {Scope} */
-            this.scope = scope;
+            this.scope;
+            /** typeof {Object} */
+            this.data;
         }
-    }
-    class Component extends BaseComponent {
-        constructor(name, scope) {
-            super(name, scope);
+        setScope(scope) {
+            this.scope = scope;
             this.data = scope.data;
-            this.$ele = null;
-            this.template = null;
         }
         //@overwrite
         onLoad() {}
+        //@overwrite
+        onDestroy() {}
+    }
+    class Component extends BaseComponent {
+        constructor(name) {
+            super(name);
+            this.$ele = null;
+            this.template = null;
+        }
         observeAttributes(fn) {
             //todo
             // let observer = new MutationObserver(function(mutations) {
@@ -302,14 +292,16 @@
         return Math.floor(1 + Math.random() * 0xfffffffff).toString(16);
     }
     class Scope {
-        constructor(ref, type) {
+        constructor(ref, ctx, type, subType) {
             let self = this;
             this.ID = getUID();
             this.type = type;
+            this.subType = subType;
             /** @type {Rx.Subject} */
             this.onDataUpdate = new Rx.Subject();
             this._data = {};
             this.ref = ref;
+            this.context = ctx;
             this.children = [];
             this.data = new Proxy(this._data, {
                 get: function(target, name) {
@@ -319,22 +311,15 @@
                         case "onUpdate":
                             return self.onDataUpdate;
                         default:
-                            if (!target.hasOwnProperty(name)) return;
+                            if (!target.hasOwnProperty(name)) return undefined;
                             return target[name];
                     }
-                },
-                apply(target, thisArg, argumentsList) {
                 },
                 set(target, property, value, receiver) {
                     target[property] = value;
                     self.onDataUpdate.next(property);
                     return true;
-                },
-                has() {},
-                // apply(target, thisArg, argumentsList) {
-                //     return;
-                // },
-                construct() { throw "It's not allowed to instantiate data" }
+                }
             });
             /** @type {Scope} */
             this.parent = null;
@@ -356,19 +341,40 @@
                 this._data[prop] = data[prop];
                 this.onDataUpdate.next(prop);
             }
-            // console.log(data)
-            // console.dir(this._data)
             function observerHandler(data, prop) {
                 data[prop].subscribe((d) => {
-                    //set data
                     self.data[prop] = d;
-                    // self.onDataUpdate.next(prop);
-                })
+                });
             }
         }
+
+        resolveOnComps(property) {
+            if (this.type === "comp" && this.context.hasOwnProperty(property))
+                return this.context[property];
+            return (this.parent)? this.parent.resolveOnComps(property): undefined;
+        }
         resolve(property) {
-            // console.log("resolve", property, this.data);
-            let parts = (Array.isArray(property))? property: property.split(".");
+            let parts;
+
+            if (typeof property === "string") {
+                let isFunc = property.indexOf("(") > -1;
+                if (isFunc) {
+                    let match = /(\w*[^()])+\((.*)\)$/.exec(property);
+                    //resolve function name
+                    let func = this.resolveOnComps(match[1]);
+                    //resolve all arguments
+                    let args = match[2].split(",");
+                    let resolvedArgs = [];
+                    for (let arg of args) {
+                        resolvedArgs.push(this.resolve(arg) );
+                    }
+                    //run function
+                    return func.apply(null, resolvedArgs);
+                }
+                parts = (Array.isArray(property))? property: property.split(".");
+            } else {
+                parts = property;
+            }
             if (this.data.has(parts[0])) {
                 let last = this.data[ parts[0] ];
                 for (let i = 1; i < parts.length; i++) {
@@ -406,17 +412,17 @@
          * @returns {Component}
          */
         getComp() {
-            if (this.ref.hasOwnProperty("jsFairComponent")) {
+            if (this.ref.hasOwnProperty("jsFairComponent"))
                 return this.ref.jsFairComponent;
-            } else if (this.parent) {
+            else if (this.parent)
                 return this.parent.getComp();
-            }
         }
         destroy() {
             this.parent.destroyChild(this);
         }
         _destroy() {
             this.destroyAllChilds();
+            this.context.onDestroy();
             this.parent = null;
             if (this.onDataUpdate) this.onDataUpdate.complete();
             this.onDataUpdate = null;
@@ -432,6 +438,7 @@
             return {
                 ID: this.ID,
                 type: this.type,
+                subType: this.subType,
                 children: this.children,
                 data: this._data
             };
@@ -451,12 +458,8 @@
                     let tagName = node.tagName;
                     if (tagName) {
                         tagName = tagName.toLowerCase();
-                        //check if comp
                         if (Components.hasOwnProperty(tagName)) {
-                            //load comp
-                            // loadComp(node, [], scope);
                             initComp(node, scope, []);
-                            // initSubTree(node, scope);
                             node = node.nextSibling;
                             continue;
                         }
@@ -470,9 +473,6 @@
                     break;
                 case 3:
                     initDirective("#text", node, null, scope);
-                    break;
-                case 11:
-                    //document fragment
                     break;
                 default:
                     initSubTree(node, scope);
@@ -521,14 +521,15 @@
             return;
         }
         if (!Components.hasOwnProperty(componentName)) throw ("no component with name: " + componentName);
-        let compScope = new Scope(node, "Component_" + componentName);
+        let ctx = new Component(componentName);
+        let compScope = new Scope(node, ctx, "comp", componentName);
+        ctx.setScope(compScope);
         scope.add(compScope);
-        let ctx = new Component(componentName, compScope);
         ctx.$ele = $(node);
         $(node).data("context", ctx);//@todo deprecated
         node.jsFairComponent = ctx;
-        // node.jsFairScope = compScope;
         node.getComponent = () => {
+            //@todo mark as deprecated
             return ctx;
         };
 
@@ -550,7 +551,7 @@
     global.initComp = initComp;
 
     window.onload = function() {
-        rootScope = new Scope(document.body, "ROOT");
+        rootScope = new Scope(document.body, {onDestroy() {}}, "ROOT");
         //init modules
         let loaded = [];
         let toLoad = ModuleNames.slice();
@@ -587,9 +588,11 @@
 
         sendToInspector("onPageLoaded", "");
         sendToInspector("onTreeChanged", rootScope);
-        global.AppState.onAppStateChanged.subscribe(()=> {
-            sendToInspector("onTreeChanged", rootScope);
-        });
+        if (global.AppState) {
+            global.AppState.onAppStateChanged.subscribe(() => {
+                sendToInspector("onTreeChanged", rootScope);
+            });
+        }
     };
 
     window.jsFair = {};
@@ -633,7 +636,7 @@ defineDirective({ name: "#for" }, function (node, attr, scope) {
     let a = attr.match(/(\w*) (of|in|on) (\w*)/);
     if (a.length !== 4) throw "Error in #for";//@notLive
     let _data = scope.resolve(a[3]) || [];
-    let forScope = new jsFair.Scope(node);
+    let forScope = new jsFair.Scope(node, {onDestroy: discard}, "#for", a[3]);
     scope.add(forScope);
     redraw();
 
@@ -648,12 +651,13 @@ defineDirective({ name: "#for" }, function (node, attr, scope) {
         //@todo remove old scopes from scope
         forScope.destroyAllChilds();
         _data = scope.resolve(a[3]);
+        if (!Array.isArray(_data)) return;
         let fragment = document.createDocumentFragment();
         for (let i = 0; i < _data.length; i++) {
             let subFrag = template.cloneNode(true);
             // blockScope[a[1]] = data[i];
             // scopeStack.push(blockScope);
-            let itemScope = new jsFair.Scope(subFrag.firstChild);
+            let itemScope = new jsFair.Scope(subFrag.firstChild, {onDestroy() {}}, a[1], "["+i+"]");
             itemScope.data[a[1]] = _data[i];
             forScope.add(itemScope);
             // debugger;
@@ -663,6 +667,9 @@ defineDirective({ name: "#for" }, function (node, attr, scope) {
         }
         node.innerHTML = "";
         node.append(fragment);
+    }
+    function discard() {
+
     }
 });
 defineDirective({ name: "#on" }, function (node, attr, scope) {

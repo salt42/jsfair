@@ -33,6 +33,9 @@ defineComp({
         user.color = "#" + Math.floor(Math.random() * 255 * 255 * 255).toString(16);
         this.data.Users = this.data.Users;
     };
+    this.getString = function () {
+        return "test"
+    };
     this.onUserClick = function(node) {
         console.log("click")
     };
