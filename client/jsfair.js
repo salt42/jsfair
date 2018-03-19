@@ -323,6 +323,7 @@
             });
             /** @type {Scope} */
             this.parent = null;
+            this._subscriptions = [];
             ref.jsFairScope = this;
         }
         setData(data) {
@@ -342,12 +343,13 @@
                 this.onDataUpdate.next(prop);
             }
             function observerHandler(data, prop) {
-                data[prop].subscribe((d) => {
-                    self.data[prop] = d;
-                });
+                self._subscriptions.push(
+                    data[prop].subscribe((d) => {
+                        self.data[prop] = d;
+                    })
+                );
             }
         }
-
         resolveOnComps(property) {
             if (this.type === "comp" && this.context.hasOwnProperty(property))
                 return this.context[property];
@@ -422,6 +424,10 @@
         }
         _destroy() {
             this.destroyAllChilds();
+            for (let i = 0; i < this._subscriptions.length; i++) {
+                this._subscriptions[i].unsubscribe();
+            }
+            this._subscriptions = [];
             this.context.onDestroy();
             this.parent = null;
             if (this.onDataUpdate) this.onDataUpdate.complete();
