@@ -29,23 +29,7 @@
     let Modules = {},
         ModuleNames = [],
         Components = {},
-        ComponentNames = [],
-        TemplateCache = {
-            hash: [],
-            templates: [],
-            add: (id, template) => {
-                TemplateCache.hash.push(id);
-                TemplateCache.templates.push(template);
-            },
-            get: (id) => {
-                let index = TemplateCache.hash.indexOf(id);
-                if (index < 0) return false;
-                return TemplateCache.templates[index];
-            },
-            has: (id) => {
-                return (TemplateCache.hash.indexOf(id) !== -1);
-            }
-        };
+        ComponentNames = [];
 
     let directives = {
         "#text": {
@@ -641,6 +625,7 @@ defineDirective({ name: "#for" }, function (node, attr, scope) {
     //attr auslesen
     let a = attr.match(/(\w*) (of|in|on) (\w*)/);
     if (a.length !== 4) throw "Error in #for";//@notLive
+    let observProp = a[3].split(".")[0];
     let _data = scope.resolve(a[3]) || [];
     let forScope = new jsFair.Scope(node, {onDestroy: discard}, "#for", a[3]);
     scope.add(forScope);
@@ -648,27 +633,22 @@ defineDirective({ name: "#for" }, function (node, attr, scope) {
 
     scope.data.onUpdate.subscribe((prop) => {
         //@todo if dynamic update sub scopes
-        if (prop === a[3] ) redraw();
+        if (prop === observProp) redraw();
     });
     //@todo add modes (dynamic)
     // function add(items) {}
     // function remove(items) {}
     function redraw() {
-        //@todo remove old scopes from scope
         forScope.destroyAllChilds();
         _data = scope.resolve(a[3]);
         if (!Array.isArray(_data)) return;
         let fragment = document.createDocumentFragment();
         for (let i = 0; i < _data.length; i++) {
             let subFrag = template.cloneNode(true);
-            // blockScope[a[1]] = data[i];
-            // scopeStack.push(blockScope);
             let itemScope = new jsFair.Scope(subFrag.firstChild, {onDestroy() {}}, a[1], "["+i+"]");
             itemScope.data[a[1]] = _data[i];
             forScope.add(itemScope);
-            // debugger;
             jsFair.global.initSubTree(subFrag, itemScope);
-            // initDirectivesR(subFrag, ctx, scopeStack);
             fragment.append(subFrag);
         }
         node.innerHTML = "";
@@ -764,3 +744,19 @@ defineDirective({ name: "#value" }, function (node, attr, scope) {
         if (prop === attr.split(".")[0] ) node.value = scope.resolve(attr);
     });
 });
+// defineDirective({ name: "#classif" }, function (node, attr, scope) {
+//     // #classif="VAR:classname"
+//     let a = attr.split(":");
+//     let observProp = a[0].split(".")[0];
+//     let className = a[1];
+//     let value = scope.resolve(a[0]);
+//     scope.data.onUpdate.subscribe((prop) => {
+//         if (prop === observProp) {
+//             value = scope.resolve(a[0]);
+//             if (value)
+//                 node.classList.add(className);
+//             else
+//                 node.classList.remove(className);
+//         }
+//     });
+// });

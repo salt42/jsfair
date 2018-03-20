@@ -14,6 +14,7 @@ let templates = "";
 //     }
 // });
 function build(app) {
+    templates = "";
     global.headerIncludes = '<script src="/jsfair/browserBridge.js"></script>' + tagEnd;
     global.headerIncludes += '<script src="/jsfair/libsmin.js"></script>' + tagEnd;
     global.headerIncludes += '<script src="/jsfair/jsfair.js"></script>' + tagEnd;
@@ -47,10 +48,6 @@ function build(app) {
         global.headerIncludes += createScriptTag(comp.js);
     }
     global.headerIncludes += templates;
-}
-hookIn.http_init(build);
-module.exports = {
-    reload: build
 }
 /* region auxiliaries */
 function createScriptTag(path) {
@@ -86,3 +83,9 @@ function dashToCamel(str) {
     })
 }
 /*endregion*/
+
+hookIn.http_init(build);
+compMan.onChanged(() => build());
+module.exports = {
+    reload: build
+};

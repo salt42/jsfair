@@ -176,6 +176,7 @@ function run() {
         }
     }
     /*endregion*/
+    trigger("changed");
 }
 
 /* region auxiliaries */
@@ -378,10 +379,23 @@ function makeIterator(type, valueType) {
 //
 // if (devMock) log("Componets mocked".red);
 /*endregion*/
+let listeners = new Map();
+function trigger(type, ...args) {
+    if (listeners.has(type) ) {
+        for (let listener of listeners.get(type)) {
+            if (typeof listener === "function") listener(...args)
+        }
+    }
+}
+
 init();
 module.exports = {
     items: items,
     inactive: inactiveItems,
     reload: run,
     getIterator: makeIterator,
+    onChanged: (fn) => {
+        if (!listeners.has("changed")) listeners.set("changed", []);
+        listeners.get("changed").push(fn);
+    }
 };
