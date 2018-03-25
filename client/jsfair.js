@@ -76,30 +76,11 @@
              */
             init: function(node, attr, scope) {
                 //parse css
-                let cssProps = attr.split(";");
+                let cssProps = attr.split("::");
                 for (let i = 0; i < cssProps.length; i++) {
                     let prop = cssProps[i].split(":");
-                    // style = TryResolveVar(prop[0], scopeStack) + ":" + TryResolveVar(prop[1], scopeStack) + ";";
                     node.style[prop[0]] = scope.resolve(prop[1]);
                 }
-                //remove #attr
-                //add css attr
-                // function TryResolveVar(name, scopeStack, data) {
-                //     let nameParts = name.split(".");
-                //     for (let i = 0; i < scopeStack.length; i++) {
-                //         if (scopeStack[i].hasOwnProperty(nameParts[0]) ) return re(scopeStack[i]);
-                //     }
-                //     if (ctx.data.has(nameParts[0])) return ctx.data[nameParts[0]];
-                //     return name;
-                //     function re(target) {
-                //         let lastValue = target;
-                //         for (let j = 0; j < nameParts.length; j++) {
-                //             if (!lastValue.hasOwnProperty(nameParts[j]) ) return name;
-                //             lastValue = lastValue[nameParts[j]];
-                //         }
-                //         return lastValue;
-                //     }
-                // }
             }
         }
     };
@@ -728,6 +709,12 @@ defineDirective({ name: "#on" }, function (node, attr, scope) {
         return scope.resolve(name);
     }
 });
+defineDirective({ name: "#value" }, function (node, attr, scope) {
+    node.value = scope.resolve(attr);
+    scope.data.onUpdate.subscribe((prop) => {
+        if (prop === attr.split(".")[0] ) node.value = scope.resolve(attr);
+    });
+});
 defineDirective({ name: "#data" }, function (node, attr, scope) {
     let a = attr.split(":");
     if (a.length !== 2) throw "Error in #data";//@notLive
@@ -735,13 +722,7 @@ defineDirective({ name: "#data" }, function (node, attr, scope) {
     node.dataset[a[0]] = scope.resolve(a[1]);
     node.removeAttribute("#data");
     scope.data.onUpdate.subscribe((prop) => {
-        if (prop === a[1].split(".")[0] ) node.setAttribute(a[0], scope.resolve(a[1]) );
-    });
-});
-defineDirective({ name: "#value" }, function (node, attr, scope) {
-    node.value = scope.resolve(attr);
-    scope.data.onUpdate.subscribe((prop) => {
-        if (prop === attr.split(".")[0] ) node.value = scope.resolve(attr);
+        if (prop === a[1].split(".")[0] ) node.dataset[a[0]] = scope.resolve(a[1]);
     });
 });
 // defineDirective({ name: "#classif" }, function (node, attr, scope) {
