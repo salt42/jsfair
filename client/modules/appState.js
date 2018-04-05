@@ -145,6 +145,7 @@ define("AppState", function(global) {
         debug = val;
     };
     /**
+     * @description call state via url
      * @memberOf Global.AppState
      * @param {string} url
      */
@@ -160,6 +161,23 @@ define("AppState", function(global) {
             });
             if(benchmark) console.timeEnd("AppState Time");//@notLive
         });
+    };
+    /**
+     * @todo
+     * @summary call state directly
+     * @memberOf Global.AppState
+     * @param {string} url
+     */
+    this.goToState = function (state) {
+        if(debug) console.log("GoToState", state);//@notLive
+        if(benchmark) console.time("AppState Time");//@notLive
+        if(debug) console.log(state);//@notLive
+        push({
+            name: state[state.length-1],
+            url: null,
+            matches: state
+        });
+        if(benchmark) console.timeEnd("AppState Time");//@notLive
     };
 
     global.onPageLoaded.subscribe(function() {
