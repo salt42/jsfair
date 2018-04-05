@@ -163,7 +163,8 @@ define("AppState", function(global) {
         });
     };
     /**
-     * @todo
+     * @todo marked deprecated untill implementation
+     * @deprecated
      * @summary call state directly
      * @memberOf Global.AppState
      * @param {string} url
