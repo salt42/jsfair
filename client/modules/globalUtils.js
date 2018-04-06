@@ -82,9 +82,14 @@
 
 
 String.prototype.toCamelCase = function () {
-    return this.replace(/\W+(.)/g, function (x, chr) {
-        return chr.toUpperCase();
+    // removes dashes
+    return this
+        .replace(/\W+(.)/g, function (x, chr) {
+            return chr.toUpperCase();
     })
+        .replace(/_+(.)/g, function (x, chr) {
+            return chr.toUpperCase();
+    });
 };
 String.prototype.camelCaseToUnder_line = function () {
     return this.replace(/([a-zA-Z])(?=[A-Z])/g, '$1_').toLowerCase();
