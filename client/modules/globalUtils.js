@@ -80,7 +80,6 @@
     }
 }(jQuery));
 
-
 String.prototype.toCamelCase = function () {
     // removes dashes
     return this
@@ -97,18 +96,3 @@ String.prototype.camelCaseToUnder_line = function () {
 String.prototype.camelCaseToDash = function () {
     return this.replace(/([a-zA-Z])(?=[A-Z])/g, '$1-').toLowerCase();
 };
-
-// /**
-//  * @namespace window
-//  * @param   {string} str
-//  * @returns {string}S
-//  */
-// window.toCamelCase = (function (str) {
-//         let DEFAULT_REGEX = /[-_]+(.)?/g;
-//
-//         function toUpper(match, group1) {
-//             return group1 ? group1.toUpperCase() : '';
-//         }
-//         return function (str, delimiters) {
-//             return str.replace(delimiters ? new RegExp('[' + delimiters + ']+(.)?', 'g') : DEFAULT_REGEX, toUpper);};
-//     })();
