@@ -86,11 +86,7 @@
                 if (typeof fn === "function") fn();
                 return;
             }
-            if (persistent && $loadedComp) {
-                $loadedComp.detach();//@todo set scope to detached
-            } else {
-                global.removeNode($loadedComp);
-            }
+            this.unLoad();
             _compName = compName;
             if (persistent && persistentComps.has(compName)) {
                 //laode this one
@@ -101,6 +97,13 @@
                 if (persistent) persistentComps.set(compName, $loadedComp);
                 $element.append($loadedComp);
                 global.loadComponent($loadedComp, fn, args);
+            }
+        };
+        this.unLoad = () => {
+            if (persistent && $loadedComp) {
+                $loadedComp.detach();//@todo set scope to detached
+            } else {
+                global.removeNode($loadedComp);
             }
         };
         this.getComponent = () => {

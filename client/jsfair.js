@@ -162,8 +162,16 @@
         // @todo if (!attr) attr = node.attributes[name]
         directives[name].init(node, attr, scope);
     }
-
-    function getTemplate(componentName, templatePath, fn) {
+    function fragmentFromString(strHTML) {
+        let temp = document.createElement('template');
+        temp.innerHTML = strHTML;
+        return temp.content;
+    }
+    function getTemplate(componentName, fn) {
+        if (Components[componentName].hasOwnProperty("template")) {
+            fn(fragmentFromString(Components[componentName].template));
+            return;
+        }
         let template = document.head.querySelector("#template-" + componentName + "-main");
         if (template && !DEV) {
             // let ele = document.importNode(template.content, true);
@@ -504,14 +512,15 @@
             return ctx;
         };
 
-        let templatePath = false;
-        if (typeof Components[componentName] === "object" && Components[componentName].hasOwnProperty("templatePath")) {
-            templatePath = Components[componentName].templatePath;
-        }
-
-        getTemplate(componentName, templatePath, (template) => {
+        getTemplate(componentName, (template) => {
             Components[componentName].init.call(ctx, global, $(template), args);
             initSubTree(template, compScope);
+            // console.dir(template)
+            // if (componentName === "page-overlay") {
+            //
+            //     console.dir(template)
+            //     console.dir(node)
+            // }
             node.appendChild(template);
 
             if (ctx.hasOwnProperty("onLoad") && typeof ctx.onLoad === "function") {
