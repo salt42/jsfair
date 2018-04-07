@@ -28,6 +28,7 @@
     "js-beautify": "^1.7.5",
     "node-gyp": "^3.6.2",
     "serve-favicon": "^2.4.5",
+    "socket.io": "^2.1.0",
     "ws": "^4.0.0"
   }
 }

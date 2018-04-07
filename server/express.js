@@ -11,8 +11,14 @@ const favicon         = require('serve-favicon');
 const cookieParser    = require('cookie-parser');
 const bodyParser      = require('body-parser');
 const hbs             = require('express-hbs');
+const SocketIO        = require('socket.io');
+const Http            = require('http');
 const app = express();
 const PORT = parseInt(config.server.http.port);
+
+
+let http = Http.createServer({}, app);
+const io = SocketIO(http);
 
 // view engine setup
 global.headerIncludes = "";
