@@ -17,9 +17,6 @@ const app = express();
 const PORT = parseInt(config.server.http.port);
 
 
-let http = Http.createServer({}, app);
-const io = SocketIO(http);
-
 // view engine setup
 global.headerIncludes = "";
 hbs.registerHelper('headerIncludes', function(text, options) {
