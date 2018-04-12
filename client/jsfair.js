@@ -32,6 +32,65 @@
         ComponentNames = [];
 
     let directives = {
+        "::": {
+            name: "::",
+            /**
+             * @param node
+             * @param targetAttr
+             * @param attr
+             * @param {Scope} scope
+             */
+            init: function(node, targetAttr, attr, scope) {
+                //parse attr
+                let so = attr.split('?');
+                let st;
+                let when = so[0];
+                let then = false;
+                let els = false;
+                if(so.length === 2 && so[1].indexOf(":") > -1) {
+                    st = so[1].split(':');
+                    then = st[0];
+                    if (st.length > 1) els = st[1];
+                } else if (so.length === 2) {
+                    then = so[1];
+                }
+                //remove : attr
+                node.removeAttribute(':'+targetAttr);
+                //add change handler
+                let watch = [];
+                let compare = false;
+                if (when.indexOf("==") > -1) {
+                    watch = when = when.split("==");
+                    watch[0] = watch[0].split(".")[0];
+                    watch[1] = watch[1].split(".")[0];
+                    compare = true;
+                } else {
+                    watch.push(when.split(".")[0]);
+                    when = [when];
+                }
+                console.log(when,then,els)
+                update(watch[0]);
+                scope.data.onUpdate.subscribe(update);
+                function update(prop) {
+                    if (watch.indexOf(prop) < 0) return;
+                    let rWhen = resolveCompare();
+                    if (then) {
+                        let c = (rWhen)? then: els;
+                        if (c === false) c = "'";
+                        if (c.charAt(0) === "'") {
+                            node.setAttribute(targetAttr, c.replace(/\'/g,''));
+                        } else {
+                            node.setAttribute(targetAttr, scope.resolve(c));
+                        }
+                    } else {
+                        node.setAttribute(targetAttr, scope.resolve(when[0]));
+                    }
+                }
+                function resolveCompare() {
+                    return (compare)? scope.resolve(when[0]) === scope.resolve(when[1]): scope.resolve(when[0]);
+                }
+            }
+        },
         "#text": {
             name: "#text",
             /**
@@ -85,6 +144,7 @@
         }
     };
     let directiveNames = [
+        "::",
         "#text",
         "#css"
     ];
@@ -158,9 +218,14 @@
     };
 
     function initDirective(name, node, attr, scope) {
-        if (!directives.hasOwnProperty(name)) return;
-        // @todo if (!attr) attr = node.attributes[name]
-        directives[name].init(node, attr, scope);
+        let firstChar = name.charAt(0);
+        if (firstChar === '#') {
+            if (!directives.hasOwnProperty(name)) return;
+            directives[name].init(node, attr, scope);
+        } else if (firstChar === ':') {
+
+            directives['::'].init(node, name.substr(1), attr, scope);
+        }
     }
     function fragmentFromString(strHTML) {
         let temp = document.createElement('template');
@@ -445,7 +510,8 @@
                     }
                     for (let i = 0; i < node.attributes.length; i++) {
                         let name = node.attributes[i].name;
-                        if (name.charAt(0) !== "#") continue;
+                        let firstChar = name.charAt(0);
+                        if (firstChar !== "#" && firstChar !== ":") continue;
                         initDirective(name, node, node.attributes[i].nodeValue, scope);
                     }
                     initSubTree(node, scope);

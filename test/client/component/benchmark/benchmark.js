@@ -1,11 +1,15 @@
 // defineComp("test", function (global, $element) {  or
+let MODel = {
+    rows: [],
+    testClass: "red",
+    comp: "red",
+    flag: false
+};
 defineComp({
     name: "benchmark",
 }, function (global) {
     /** @this Component */
-    this.model({
-        rows: []
-    });
+    this.model(MODel);
 
     this.onLoad = () => {};
     this.runTest = () => {
@@ -22,5 +26,9 @@ defineComp({
     }
     this.onClickLi = function () {
         console.log("clicked");
+    }
+    this.bla = function() {
+        this.data.flag = !this.data.flag;
+
     }
 });
