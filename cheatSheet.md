@@ -37,7 +37,8 @@
 </p>
 ```
 
-##### #value -> Deprecated (use :value)
+##### #value
+
 ##### #data  -> Deprecated
 
 ## Components

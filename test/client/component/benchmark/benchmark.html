@@ -2,6 +2,10 @@
 <!--<button #on="click:bla()" :class="testClass==comp">Run Test</button>-->
 <button #on="click:bla()" :class="flag?'blue'">Run Test</button>
 
+<div #on="click:.some-class:handlerFunc(this, event)">
+    <div class="some-class">aaaa</div>
+    <div class="">bbbb</div>
+</div>
 
 <ul #for="row of rows">
     <li #on="click:onClickLi()">{{row.text}}<span #on="click:onClickX()"> X </span>

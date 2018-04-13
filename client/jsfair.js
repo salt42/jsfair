@@ -393,7 +393,43 @@
                 return this.context[property];
             return (this.parent)? this.parent.resolveOnComps(property): undefined;
         }
-        resolve(property) {
+
+        /**
+         * optimization. only split :/
+         * @param path
+         * @param write
+         * @returns {{}}
+         */
+        resolve(path, write) {
+            let parts;
+
+            if (typeof path === "string") {
+                let isFunc = path.indexOf("(") > -1;
+                if (isFunc) {
+                    let match = /(\w*[^()])+\((.*)\)$/.exec(path);
+                    //resolve function name
+                    let func = this.resolveOnComps(match[1]);
+                    //resolve all arguments
+                    let args = match[2].split(",");
+                    let resolvedArgs = [];
+                    for (let arg of args) {
+                        resolvedArgs.push(this.resolve(arg) );
+                    }
+                    //run function
+                    return func.apply(null, resolvedArgs);
+                }
+                parts = path.split(".");
+            } else {
+                parts = path;
+            }
+            return parts.reduce(function(prev, curr, index) {
+                if (write && index >= parts.length - 1) {
+                    return prev ? prev[curr] = write : undefined
+                }
+                return prev ? prev[curr] : undefined
+            }, this._data );
+        }
+        resolve2(property, write) {
             let parts;
 
             if (typeof property === "string") {
@@ -411,7 +447,7 @@
                     //run function
                     return func.apply(null, resolvedArgs);
                 }
-                parts = (Array.isArray(property))? property: property.split(".");
+                parts = property.split(".");
             } else {
                 parts = property;
             }
@@ -786,8 +822,13 @@ defineDirective({ name: "#on" }, function (node, attr, scope) {
 });
 defineDirective({ name: "#value" }, function (node, attr, scope) {
     node.value = scope.resolve(attr);
+    let update = false;
     scope.data.onUpdate.subscribe((prop) => {
+        update = true;
         if (prop === attr.split(".")[0] ) node.value = scope.resolve(attr);
+    });
+    node.addEventListener('input', function (e) {
+        scope.resolve(attr, e.target.value);
     });
 });
 defineDirective({ name: "#data" }, function (node, attr, scope) {

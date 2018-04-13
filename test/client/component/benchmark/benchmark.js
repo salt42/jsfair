@@ -23,12 +23,13 @@ defineComp({
     };
     this.onClickX = function () {
         console.log("remove");
-    }
+    };
     this.onClickLi = function () {
         console.log("clicked");
-    }
+    };
     this.bla = function() {
         this.data.flag = !this.data.flag;
 
-    }
+    };
+    this.handlerFunc = (...args) => console.log(...args);
 });
