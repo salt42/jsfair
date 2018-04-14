@@ -37,6 +37,11 @@
 </p>
 ```
 
+##### #goto
+```
+<a #goto="/go/to/url">Link</a>
+<a #goto="state">Link</a>
+```
 ##### #value
 
 ##### #data  -> Deprecated

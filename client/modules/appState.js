@@ -1,16 +1,25 @@
-defineComp("a", function(global) {
-    let $ele = this.$ele;
-
-    $ele.css("cursor", "pointer");
-    $ele.click(function(e) {
-        if (!$ele[0].hasAttribute("url")) {
-            return;
-        }
-        let targetUrl = $ele.attr("url");
-        e.preventDefault();
-        if (targetUrl) {
-            global.AppState.goToUrl(targetUrl);
-        }
+// defineComp("a", function(global) {
+//     let $ele = this.$ele;
+//     $ele.css("cursor", "pointer");
+//     if (!$ele[0].hasAttribute("url")) return;
+//     $ele.click(function(e) {
+//         if (!$ele[0].hasAttribute("url")) {
+//             return;
+//         }
+//         let targetUrl = $ele.attr("url");
+//         e.preventDefault();
+//         if (targetUrl) {
+//             global.AppState.goToUrl(targetUrl);
+//         }
+//     });
+// });
+defineDirective({ name: "#goto" }, function (node, attr, scope) {
+    let isUrl = attr.indexOf("/") > -1;
+    let appState = window.jsFair.global.AppState;
+    node.removeAttribute("#goto");
+    node.addEventListener('click', () => {
+        if (isUrl) return appState.goToUrl(attr);
+        appState.goToState(attr);
     });
 });
 define("AppState", function(global) {
@@ -22,6 +31,11 @@ define("AppState", function(global) {
     /**
      * @memberOf Global.AppState
      */
+    document.querySelectorAll('a[url]').forEach((node, index) => {
+        node.addEventListener("click", (e) => {
+            global.AppState.goToUrl(node.getAttribute('url'));
+        });
+    });
     this.onAppStateChanged = new Rx.ReplaySubject();
     let debug = false;//@notLive
     let benchmark = false;//@notLive
@@ -85,24 +99,26 @@ define("AppState", function(global) {
                 for (let k = 0; k < keys.length; k++) {
                     args[keys[k].name] = r[k + 1];
                 }
+                let sections = (typeof state.sections === 'function')? state.sections(global): state.sections || [];
                 let stateEvent = {
                     name: state.name,
                     args: args,
+                    sections: sections
                 };
                 _result.push(stateEvent);
                 /*load comps*/
-                if(state.sections) {
-                    if (debug) console.log("load sections: ", state.sections);//@notLive
+                if(sections.length > 0) {
+                    if (debug) console.log("load sections: ", sections);//@notLive
                     let wait = [];
-                    for (let i = 0; i < state.sections.length; i++) {
-                        $("section#" + state.sections[i][0])
+                    for (let i = 0; i < sections.length; i++) {
+                        $("section#" + sections[i][0])
                             .each((index, $section) => {
                                 let section = $section.getComponent();
                                 if (!section) {
-                                    console.error("error loading section '%s'", state.sections[i][0]);
+                                    console.error("error loading section '%s'", sections[i][0]);
                                 } else {
-                                    let promise = section.load(state.sections[i][1], args);
-                                    wait.push(promise);
+                                    if (!sections[i][1]) section.unLoad();
+                                    else wait.push(section.load(sections[i][1], args) );
                                 }
                             });
                     }

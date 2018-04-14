@@ -11,11 +11,10 @@ const favicon         = require('serve-favicon');
 const cookieParser    = require('cookie-parser');
 const bodyParser      = require('body-parser');
 const hbs             = require('express-hbs');
-const SocketIO        = require('socket.io');
 const Http            = require('http');
 const app = express();
 const PORT = parseInt(config.server.http.port);
-
+const server = Http.createServer(app);
 
 // view engine setup
 global.headerIncludes = "";
@@ -76,7 +75,7 @@ function errorHandler(err, req, res, next) {
 }
 module.exports = {};
 module.exports.init = function () {
-    hook.trigger("http_init", app);
+    hook.trigger("http_init", app, server);
     // ****************** routes *************************
     hook.getTrigger("http_createRoute", function(trigger, args) {
         log.info("create router %s", args[0]);
@@ -112,7 +111,7 @@ module.exports.init = function () {
             log.error("port '" + PORT + "' is not free");
             return;
         }
-        app.listen(PORT, function () {
+        server.listen(PORT, function () {
             log.info('HTTP'.magenta + ' listening on port ' + PORT.toString().magenta);
         });
     });

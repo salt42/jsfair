@@ -148,6 +148,7 @@
         "#text",
         "#css"
     ];
+    global.directives = directives;
     /**
      * Define a jsFair module
      * @param meta

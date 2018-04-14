@@ -44,6 +44,7 @@
                 });
             });
         };
+        //for backwards compatibility @todo remove
         let self = this;
         global.sections = {
             get(...args) {
@@ -59,7 +60,7 @@
     defineComp("section", function (global, template) {
         let $element = this.$ele;
         let sectionID = $element.attr("id");
-        let isStatic = !!$element.attr("static");
+        let isStatic = !!$element.attr("static");//deprecated
         let _compName = $element.attr("static") || $element.attr("default");
         let $loadedComp;
         let persistentComps = new Map();
