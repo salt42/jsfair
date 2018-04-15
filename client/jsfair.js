@@ -40,9 +40,13 @@
              * @param attr
              * @param {Scope} scope
              */
+            //<dsda>  ...  <span :class="VAR?dsa:dsa+"></span>
+            //<dsda>  ...  <span :class="VAR+var"></span>
             init: function(node, targetAttr, attr, scope) {
                 //parse attr
-                let so = attr.split('?');
+                let final = attr.split('+');
+                let so = final[0].split('?');
+                final = (final.length > 1) ? final[1] : false;
                 let st;
                 let when = so[0];
                 let then = false;
@@ -54,6 +58,7 @@
                 } else if (so.length === 2) {
                     then = so[1];
                 }
+
                 //remove : attr
                 node.removeAttribute(':'+targetAttr);
                 //add change handler
@@ -68,22 +73,33 @@
                     watch.push(when.split(".")[0]);
                     when = [when];
                 }
-                console.log(when,then,els)
                 update(watch[0]);
                 scope.data.onUpdate.subscribe(update);
                 function update(prop) {
                     if (watch.indexOf(prop) < 0) return;
                     let rWhen = resolveCompare();
+                    let rFinal;
+                    if (final === false) {
+                        rFinal = '';
+                    } else if (final.charAt(0) === "'") {
+                        rFinal = final.replace(/\'/g, '');
+                    } else {
+                        rFinal = scope.resolve(final);
+                    }
                     if (then) {
+                        let att;
                         let c = (rWhen)? then: els;
                         if (c === false) c = "'";
                         if (c.charAt(0) === "'") {
-                            node.setAttribute(targetAttr, c.replace(/\'/g,''));
+                            att = c.replace(/\'/g,'');
                         } else {
-                            node.setAttribute(targetAttr, scope.resolve(c));
+                            att = scope.resolve(c); /// jhkjhk
                         }
+                        att += rFinal;
+                        node.setAttribute(targetAttr, att);
                     } else {
-                        node.setAttribute(targetAttr, scope.resolve(when[0]));
+                        let att = scope.resolve(when[0]) + rFinal;
+                        node.setAttribute(targetAttr, att);
                     }
                 }
                 function resolveCompare() {

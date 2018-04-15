@@ -34,7 +34,7 @@ const hbs             = require('express-hbs');
 const Http            = (config.server.http.secure)? require('https'): require('http');
 const app = express();
 const PORT = parseInt(config.server.http.port);
-const serverOpt = (!config.server.http.secure)? {}: {cert:config.server.http.secure.certFile, key:config.server.http.secure.keyFile};
+const serverOpt = (!config.server.http.secure)? app: {cert:config.server.http.secure.certFile, key:config.server.http.secure.keyFile};
 const server = Http.createServer(serverOpt, app);
 
 
