@@ -525,7 +525,9 @@
             };
         }
     }
-
+    class Module {
+        constructor() {}
+    }
     /**
      * @memberOf Global
      * @param {Element|DocumentFragment} node
@@ -633,9 +635,7 @@
     }
     global.initComp = initComp;
 
-    window.onload = function() {
-        rootScope = new Scope(document.body, {onDestroy() {}}, "ROOT");
-        //init modules
+    function initModules() {
         let loaded = [];
         let toLoad = ModuleNames.slice();
         let knockOutCount = 0;
@@ -651,7 +651,7 @@
                     break;
                 }
                 if (canLoad) {
-                    let context = {};
+                    let context = new Module();
                     Modules[moduleName].init.call(context, global);
                     global[moduleName] = context;
                     loaded.push(moduleName);
@@ -664,6 +664,10 @@
             if (knockOutCount > 10) break;
         }
         global.onModulesLoaded.next();
+    }
+    window.onload = function() {
+        rootScope = new Scope(document.body, {onDestroy() {}}, "ROOT");
+        initModules();
 
         // load components
         initSubTree(document.body, rootScope);
@@ -680,6 +684,7 @@
 
     window.jsFair = {};
     window.jsFair.global = global;
+    window.jsFair.Module = Module;
     window.jsFair.Scope = Scope;
     window.jsFair.Component = Component;
     window.jsFair.BaseComponent = BaseComponent;

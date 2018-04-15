@@ -13,11 +13,6 @@ let defaults = {
     appName: "jsFair",
     server: {
         modulePaths: [],
-        http: {
-            port: 666,
-            staticDirs: [],
-            viewsDir: "/views",
-        },
         database: {
             dbFile: "/testData.db",
             sqlPath: "/sql",
@@ -27,7 +22,7 @@ let defaults = {
     client: {
         coreModules: {},
         coreComponents: {
-            section:    true,
+            section: true,
         },
         preCss: [],
         postCss: [],
@@ -36,8 +31,16 @@ let defaults = {
     },
     registerConfig(newConf) {
         defaults = merge(defaults, newConf, { arrayMerge: overwriteMerge });
-        conf = merge(conf, newConf, { arrayMerge: overwriteMerge });
-        save();
+        conf = merge(defaults, conf, { arrayMerge: overwriteMerge });
+        saveConfig();
+    },
+    save(overwrite) {
+        if (overwrite) {
+            conf = merge(conf, overwrite, { arrayMerge: overwriteMerge });
+        }
+        console.log("do save");
+        console.log(conf);
+        saveConfig();
     }
 };
 function overwriteMerge(destinationArray, sourceArray, options) {
@@ -62,9 +65,9 @@ function load(path) {
     let content = fs.readFileSync(path);
     content = JSON.parse(content);
     conf = merge(defaults, content, { arrayMerge: overwriteMerge });
-    save();
+    saveConfig();
 }
-function save() {
+function saveConfig() {
     checkConfFile();
     fs.writeFileSync(confPath,
         beautify(JSON.stringify(conf), {
@@ -72,14 +75,3 @@ function save() {
         })
     );
 }
-
-function exitHandler(options, err) {
-    process.exit();
-}
-
-//do something when app is closing
-process.on('exit', exitHandler.bind(null,{cleanup:true}));
-//catches ctrl+c event
-process.on('SIGINT', exitHandler.bind(null, {exit:true}));
-//catches uncaught exceptions
-process.on('uncaughtException', exitHandler.bind(null, {exit:true}));

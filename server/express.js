@@ -3,6 +3,26 @@
  */
 "use strict";
 const config          = require('./jsfair/config');
+let confSecure = config.server.http.secure;
+
+config.registerConfig({
+    server: {
+        http: {
+            port: 666,
+            staticDirs: [],
+            viewsDir: "/views",
+            secure: false
+        }
+    }
+});
+if (confSecure === true) {
+    config.save({server:{http:{secure: {
+        keyFile: "",
+        certFile: ""
+    }}}});
+    throw "Please add TLS key and cert file path to config.json";
+}
+
 const log             = require('./jsfair/log')("express");
 const hook            = require('./hook');
 const express         = require('express');
@@ -11,10 +31,12 @@ const favicon         = require('serve-favicon');
 const cookieParser    = require('cookie-parser');
 const bodyParser      = require('body-parser');
 const hbs             = require('express-hbs');
-const Http            = require('http');
+const Http            = (config.server.http.secure)? require('https'): require('http');
 const app = express();
 const PORT = parseInt(config.server.http.port);
-const server = Http.createServer(app);
+const serverOpt = (!config.server.http.secure)? {}: {cert:config.server.http.secure.certFile, key:config.server.http.secure.keyFile};
+const server = Http.createServer(serverOpt, app);
+
 
 // view engine setup
 global.headerIncludes = "";
