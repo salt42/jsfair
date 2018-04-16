@@ -2,7 +2,7 @@
  * Created by salt on 28.10.2017.
  */
 "use strict";
-const config          = require('./jsfair/config');
+const config          = require('jsfair/config');
 let confSecure = config.server.http.secure;
 
 config.registerConfig({
@@ -23,8 +23,8 @@ if (confSecure === true) {
     throw "Please add TLS key and cert file path to config.json";
 }
 
-const log             = require('./jsfair/log')("express");
-const hook            = require('./hook');
+const log             = require('jsfair/log')("express");
+const hook            = require('jsfair/hook');
 const express         = require('express');
 const path            = require('path');
 const favicon         = require('serve-favicon');
@@ -77,13 +77,15 @@ module.exports.init = function () {
     //app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
     let g = {};
     module.exports.viewEngine(app, g);
-    module.exports.bodyParser(app, g);
     module.exports.cookieParser(app, g);
+    module.exports.bodyParser(app, g);
+    module.exports.session(app, g);
+    module.exports.afterSession(app, g);
     for (let i = 0; i < config.server.http.staticDirs.length; i++) {
         app.use(express.static(path.join(ROOT_PATH, config.server.http.staticDirs[i])));
     }
     app.use("/jsfair", express.static(path.join(jsfairPath, 'client')));
-    hook.trigger("http_init", app, server);
+    hook.trigger("http_init", app, server, g);
     // ****************** routes *************************
     hook.getTrigger("http_createRoute", function(trigger, args) {
         log("create router %s", args[0]);
@@ -139,20 +141,41 @@ module.exports.viewEngine = (app, g) => {
     app.set('views', path.join(ROOT_PATH, config.server.http.viewsDir));
 
 };
+module.exports.cookieParser = (app, g) => {
+    let cookieParser = require('cookie-parser');
+    app.use(cookieParser());
+    g.cookieParser = cookieParser;
+};
 module.exports.bodyParser = (app, g) => {
     let bodyParser = require('body-parser');
     app.use(bodyParser.json());
     app.use(bodyParser.urlencoded({ extended: true }));
     g.bodyParser = bodyParser;
 };
-module.exports.cookieParser = (app, g) => {
-    let cookieParser = require('cookie-parser')();
-    app.use(cookieParser);
-    g.cookieParser = cookieParser;
-};
-module.exports.sessionStore = (app, g) => {
-
-};
 module.exports.session = (app, g) => {
-
+    let session = require('express-session');
+    let MemcachedStore = require('connect-memcached')(session);
+    g.sessionStore = new MemcachedStore({
+        // hosts: ['127.0.0.1:11211'],
+        // secret: '123, easy as ABC. ABC, easy as 123' // Optionally use transparent encryption for memcache session data
+    });
+    g.sessionOptions = {
+        key:    process.env.SESSION_KEY || 'express.sid',
+        secret: process.env.SESSION_SECRET || 'sessionSecret',
+        store:  g.sessionStore,
+        saveUninitialized: true,
+        resave: true
+    };
+    g.session = session({
+        store: g.sessionStore,
+        resave: false,
+        saveUninitialized: false,
+        cookie: {
+            secure: process.env.ENVIRONMENT !== 'development' && process.env.ENVIRONMENT !== 'test',
+            maxAge: 2419200000
+        },
+        secret: 'secret'
+    });
+    app.use(g.session);
 };
+module.exports.afterSession = (app, g) => {};

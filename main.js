@@ -31,7 +31,7 @@ const DEV_MODE_INSPECTOR= (process.argv.indexOf('--inspect') > -1);
 const colors  = require('colors');
 const fs      = require("fs");
 const log     = require('jsfair/log')('#', false);
-const hook    = require('./server/hook');
+const hook    = require('jsfair/hook');
 
 /* region hookSystem */
 let hookProxyHandler = {
@@ -94,7 +94,7 @@ if (DEV_MODE) {
 try {
     log.info("Starting %s Server", conf.appName);
     let db = require("jsfair/database");
-    let express = require("./server/express");
+    let express = require("jsfair/express");
     try {
         //@todo load server modules -> from componentManager->getActiveServerModuleIDs
         for (let x = 0; x < conf.server.modulePaths.length; x++) {

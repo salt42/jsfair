@@ -4,7 +4,7 @@
 "use strict";
 
 let log         = require('./log')("Database");
-let hook        = require('../hook');
+let hook        = require('jsfair/hook');
 let fs          = require('fs');
 let path        = require('path');
 let Database    = require('better-sqlite3');
