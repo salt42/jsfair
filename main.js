@@ -30,7 +30,7 @@ const DEV_MODE_INSPECTOR= (process.argv.indexOf('--inspect') > -1);
 /* endregion*/
 const colors  = require('colors');
 const fs      = require("fs");
-const log     = require('jsfair/log')('main');
+const log     = require('jsfair/log')('#', false);
 const hook    = require('./server/hook');
 
 /* region hookSystem */
@@ -92,7 +92,7 @@ if (DEV_MODE) {
 /* endregion */
 //so und hier werden einfach alle server module geladen und dannach fehlt noch der init hook
 try {
-    log.info("Start %s Server", conf.appName);
+    log.info("Starting %s Server", conf.appName);
     let db = require("jsfair/database");
     let express = require("./server/express");
     try {
@@ -106,17 +106,22 @@ try {
                     require(loadPath + "/" + dir[i]);
                 } catch(e) {
                     error = true;
-                    log("Error in module: %s (%s)".red, dir[i].yellow, loadPath);
-                    // log("%s",  e.message.red);
-                    log("%s",  e.stack.red);
+                    let Log = require('jsfair/log')(dir[i]);
+                    if (!e.stack) {
+                        Log.error("%s", e.toString().red);
+                    } else {
+                        Log.error("Error in module: %s (%s)".red, dir[i].yellow, loadPath);
+                        if (e.stack)
+                            Log.error("%s", e.stack.red);
+                    }
                 }
                 if (!error) {
-                    log.info("Module loaded: %s", dir[i].green);
+                    log("Module loaded: %s", dir[i].green);
                 }
             }
         }
     } catch (e) {
-        log(e.message.red);
+        log.error(e.message.red);
         console.log(e);
     }
     db.init(); //use init hook
@@ -125,5 +130,6 @@ try {
     //@todo add init hook
     hook.trigger("systemReady");
 } catch (e) {
-    console.log(e);
+    log.error(e);
+    log.info("Restart with 'W', Quit with 'Q'");
 }

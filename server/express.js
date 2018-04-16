@@ -28,8 +28,6 @@ const hook            = require('./hook');
 const express         = require('express');
 const path            = require('path');
 const favicon         = require('serve-favicon');
-const cookieParser    = require('cookie-parser');
-const bodyParser      = require('body-parser');
 const hbs             = require('express-hbs');
 const Http            = (config.server.http.secure)? require('https'): require('http');
 const app = express();
@@ -38,28 +36,6 @@ const serverOpt = (!config.server.http.secure)? app: {cert:config.server.http.se
 const server = Http.createServer(serverOpt, app);
 
 
-// view engine setup
-global.headerIncludes = "";
-hbs.registerHelper('headerIncludes', function(text, options) {
-    return new hbs.SafeString(headerIncludes);
-});
-app.engine('hbs', hbs.express4({
-    // partialsDir: __dirname + '/views/partials'
-    beautify: false,
-}));
-
-app.set('view engine', 'hbs');
-app.set('views', path.join(ROOT_PATH, config.server.http.viewsDir));
-
-//app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: false }));
-app.use(cookieParser());
-
-for (let i = 0; i < config.server.http.staticDirs.length; i++) {
-    app.use(express.static(path.join(ROOT_PATH, config.server.http.staticDirs[i])));
-}
-app.use("/jsfair", express.static(path.join(jsfairPath, 'client')));
 
 let isPortTaken = function(port, fn) {
     let net = require('net');
@@ -95,12 +71,22 @@ function errorHandler(err, req, res, next) {
     res.status(500);
     res.render('error', { error: err });
 }
+
 module.exports = {};
 module.exports.init = function () {
+    //app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
+    let g = {};
+    module.exports.viewEngine(app, g);
+    module.exports.bodyParser(app, g);
+    module.exports.cookieParser(app, g);
+    for (let i = 0; i < config.server.http.staticDirs.length; i++) {
+        app.use(express.static(path.join(ROOT_PATH, config.server.http.staticDirs[i])));
+    }
+    app.use("/jsfair", express.static(path.join(jsfairPath, 'client')));
     hook.trigger("http_init", app, server);
     // ****************** routes *************************
     hook.getTrigger("http_createRoute", function(trigger, args) {
-        log.info("create router %s", args[0]);
+        log("create router %s", args[0]);
         if (!args || !args[0]) {
             log.error("No url defined in 'http_createRoute' hook");
             console.trace();
@@ -138,4 +124,35 @@ module.exports.init = function () {
         });
     });
 };
+module.exports.viewEngine = (app, g) => {
+    // view engine setup
+    global.headerIncludes = "";
+    hbs.registerHelper('headerIncludes', function(text, options) {
+        return new hbs.SafeString(headerIncludes);
+    });
+    app.engine('hbs', hbs.express4({
+        // partialsDir: __dirname + '/views/partials'
+        beautify: false,
+    }));
 
+    app.set('view engine', 'hbs');
+    app.set('views', path.join(ROOT_PATH, config.server.http.viewsDir));
+
+};
+module.exports.bodyParser = (app, g) => {
+    let bodyParser = require('body-parser');
+    app.use(bodyParser.json());
+    app.use(bodyParser.urlencoded({ extended: true }));
+    g.bodyParser = bodyParser;
+};
+module.exports.cookieParser = (app, g) => {
+    let cookieParser = require('cookie-parser')();
+    app.use(cookieParser);
+    g.cookieParser = cookieParser;
+};
+module.exports.sessionStore = (app, g) => {
+
+};
+module.exports.session = (app, g) => {
+
+};
