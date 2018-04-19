@@ -847,12 +847,12 @@ defineDirective({ name: "#for" }, function (node, attr, scope) {
     function redraw() {
         forScope.destroyAllChilds();
         _data = scope.resolve(a[3]);
+        if (!_data) return;
         let fragment = document.createDocumentFragment();
 
         if (loopType === 'of') {
             if (typeof _data[Symbol.iterator] !== 'function') throw new Error("for of expects iterator, in Component '"+scope.getComp().name+"' at '" + attr + "'");//@notLive
             if (typeof _data[Symbol.iterator] !== 'function') return;
-
             for (let i of _data.keys()) {
                 let subFrag = template.cloneNode(true);
                 let itemScope = new jsFair.Scope(subFrag.firstChild, {
