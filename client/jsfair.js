@@ -71,7 +71,7 @@
                     when = [when];
                 }
                 update(watch[0]);
-                scope.data.onUpdate.subscribe(update);
+                scope.onDataUpdate.subscribe(update);
                 function update(prop) {
                     if (watch.indexOf(prop) < 0) return;
                     let rWhen = resolveCompare();
@@ -127,7 +127,7 @@
                     node.textContent = res;
                 }
                 update();
-                scope.data.onUpdate.subscribe((prop) => {
+                scope.data.onUpdate((prop) => {
                     // if (prop === "" ) {
                     update();
                 });
@@ -163,7 +163,7 @@
                     node.style[p[0]] = scope.resolve(p[1]);
                 }
                 update(observedProps[0]);
-                scope.data.onUpdate.subscribe(update);
+                scope.data.onUpdate(update);
                 function update(prop) {
                     if (observedProps.indexOf(prop) < -1) return;
                     for (let i = 0; i < cssProps.length; i++) {
@@ -377,7 +377,9 @@
                         case "has":
                             return target.hasOwnProperty;
                         case "onUpdate":
-                            return self.onDataUpdate;
+                            return (...args) => {
+                                self.onDataUpdate.subscribe(...args);
+                            };
                         default:
                             if (!target.hasOwnProperty(name)) return undefined;
                             return target[name];
@@ -416,8 +418,9 @@
                         if (firstChar === '@') {
                             //bind attribute
                             this.bindAttribute(data[prop].slice(1), prop);
+                        } else {
+                            this._data[prop] = data[prop];
                         }
-                        this._data[prop] = data[prop];
                         break;
                     default:
                         this._data[prop] = data[prop];
@@ -438,7 +441,6 @@
             let self = this;
             // create observer if not
             if (!this.refObserver) {
-                console.log('create observer');
                 let observer = new MutationObserver(mutations => {
                     mutations.forEach(mutation => {
                         let index = observer._observedAttributNames.indexOf(mutation.attributeName);
@@ -460,8 +462,7 @@
             updateData(attrName, propName);
 
             function updateData(attr, prop) {
-                console.log('update data', attr, prop);
-                self.data[prop] = self.ref.getAttribute(attr) || '';
+                self.data[prop] = self.ref.getAttribute(attr);
             }
         }
         resolveOnComps(property) {
@@ -836,7 +837,7 @@ defineDirective({ name: "#for" }, function (node, attr, scope) {
     scope.add(forScope);
     redraw();
 
-    scope.data.onUpdate.subscribe((prop) => {
+    scope.data.onUpdate((prop) => {
         //@todo if dynamic update sub scopes
         if (prop === observedProp) redraw();
     });
@@ -967,7 +968,7 @@ defineDirective({ name: "#value" }, function (node, attr, scope) {
     let targetAttr = (type === 'checkbox')? 'checked': 'value';
     let observProp = attr.split(".")[0];
     update(observProp);
-    scope.data.onUpdate.subscribe(update);
+    scope.data.onUpdate(update);
     function update(prop) {
         if (prop !== observProp) return;
         if(targetAttr === 'checked') {
@@ -994,7 +995,7 @@ defineDirective({ name: "#data" }, function (node, attr, scope) {
         if (prop === a[1].split(".")[0] ) node.dataset[a[0]] = scope.resolve(a[1]);
     });
 });
-// defineDirective({ name: "#classif" }, function (node, attr, scope) {
+// defineDirective({ name: "#if" }, function (node, attr, scope) {
 //     // #classif="VAR:classname"
 //     let a = attr.split(":");
 //     let observProp = a[0].split(".")[0];
