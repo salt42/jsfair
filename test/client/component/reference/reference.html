@@ -1,0 +1,20 @@
+<style>
+    code {
+        padding: 10px;
+        background-color: darkgray;
+    }
+    textarea {
+        width: 100%;
+        padding: 10px;
+        background-color: darkgray;
+    }
+</style>
+
+<red :color="subcolor"></red>
+<h1>Directives</h1>
+<ul #for="direct of directives">
+    <div style="border: 1px solid #000">
+        <h3>{{direct.name}}</h3>
+        <section :id="direct.comp" :default="direct.comp"></section>
+    </div>
+</ul>

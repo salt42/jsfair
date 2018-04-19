@@ -1,0 +1,24 @@
+<style>
+    d-on {}
+</style>
+<p>Bind event handler</p>
+
+<textarea #dontparse rows="1" disabled>
+<span #on="click:clickHandler(event, this, clickCount)"></span>
+</textarea>
+<span #on="click:clickHandler(event, this, clickCount)" style="cursor: pointer">Click me</span><br>
+<span>Click count: {{clickCount}}</span>
+<br><br>
+
+<textarea #dontparse rows="5" disabled>
+<div #on="click:p:clickHandler(event, this, clickCount)">
+    not clickable
+    <p>clickable</p>
+</div>
+</textarea>
+<div #on="click:p:clickHandler(event, this, clickCount)">
+    not clickable
+    <p style="cursor: pointer">clickable</p>
+</div>
+<span>Click count: {{clickCount}}</span>
+<br><br>

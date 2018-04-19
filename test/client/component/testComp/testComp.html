@@ -1,8 +1,0 @@
-<p>{{testVar}}</p>
-<p>{{getString(testVar)}}</p>
-<span #css="color:user.color" #on="mouseover:onUserSelect(event, this, testVar)::click:onUserClick(this)">
-    Hallo
-</span>
-<ul #for="user of Users" #on="click:li:onUserSelect(event, this, user)">
-    <li #css="color:user.color" #data="username:user.name"><dev-content></dev-content></li>
-</ul>

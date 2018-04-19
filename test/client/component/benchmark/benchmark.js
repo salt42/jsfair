@@ -1,5 +1,6 @@
 // defineComp("test", function (global, $element) {  or
 let MODel = {
+    headLine: '@headline',
     rows: [],
     testClass: "red",
     comp: "red",
@@ -9,8 +10,16 @@ defineComp({
     name: "benchmark",
 }, function (global) {
     /** @this Component */
+    this.scope.onDataUpdate.subscribe((props) => {
+        if (props === "headLine") {
+            console.log(props)
+            console.log(this.scope._data.headLine );
+            if (this.scope._data.headLine === '@headline') {
+                console.trace()
+            }
+        }
+    });
     this.model(MODel);
-
     this.onLoad = () => {};
     this.runTest = () => {
         let data = [];
@@ -32,4 +41,7 @@ defineComp({
 
     };
     this.handlerFunc = (...args) => console.log(...args);
+    this.testResolve = () => {
+        //@todo benchmark resolve and resolve2
+    };
 });

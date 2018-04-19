@@ -4,7 +4,7 @@
 "use strict";
 hookIn.http_createRoute("/", function(router) {
     /* GET home page. */
-    router.get('/', function(req, res) {
+    router.get('/*', function(req, res) {
         try {
             // res.send("sers");
             res.render('layout', {});

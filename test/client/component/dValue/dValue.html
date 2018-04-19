@@ -1,0 +1,44 @@
+<style>
+    d-value {}
+</style>
+
+<button #on="click:filter()">Filter text</button>
+<button #on="click:add()">number++</button>
+<button #on="click:toggleBool()">toggle bool</button>
+<br>
+<label>
+    <span>text</span>
+    <input type="text" #value="textValue">
+</label>
+<br>
+<label>
+    <span>search</span>
+    <input type="search" #value="textValue">
+</label>
+<br>
+<label>
+    <span>number</span>
+    <input type="number" #value="numberValue">
+</label>
+<br>
+<label>
+    <span>checkbox</span>
+    <input type="checkbox" #value="boolValue">
+</label>
+<br>
+<label>
+    <span>range</span>
+    <input type="range" #value="numberValue" min="0" max="100">
+</label>
+<br>
+<label>
+    <span>textarea</span>
+    <textarea #value="mTextValue" rows="2"></textarea>
+</label>
+<label>
+    <span>select</span>
+    <select #value="textValue">
+        <option value="entry 1">entry 1</option>
+        <option value="entry 2">entry 2</option>
+    </select>
+</label>

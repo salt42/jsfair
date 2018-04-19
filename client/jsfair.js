@@ -58,9 +58,6 @@
                 } else if (so.length === 2) {
                     then = so[1];
                 }
-
-                //remove : attr
-                node.removeAttribute(':'+targetAttr);
                 //add change handler
                 let watch = [];
                 let compare = false;
@@ -81,8 +78,6 @@
                     let rFinal;
                     if (final === false) {
                         rFinal = '';
-                    } else if (final.charAt(0) === "'") {
-                        rFinal = final.replace(/\'/g, '');
                     } else {
                         rFinal = scope.resolve(final);
                     }
@@ -90,11 +85,7 @@
                         let att;
                         let c = (rWhen)? then: els;
                         if (c === false) c = "'";
-                        if (c.charAt(0) === "'") {
-                            att = c.replace(/\'/g,'');
-                        } else {
-                            att = scope.resolve(c); /// jhkjhk
-                        }
+                        att = scope.resolve(c);
                         att += rFinal;
                         node.setAttribute(targetAttr, att);
                     } else {
@@ -151,20 +142,43 @@
              */
             init: function(node, attr, scope) {
                 //parse css
-                let cssProps = attr.split("::");
-                for (let i = 0; i < cssProps.length; i++) {
-                    let prop = cssProps[i].split(":");
-                    node.style[prop[0]] = scope.resolve(prop[1]);
+                let cssProps = [];
+                let cssValues = [];
+                let observedProps = [];
+                let units = [];
+                let css = attr.split(";");
+                for (let i = 0; i < css.length; i++) {
+                    let p = css[i].split(":");
+                    cssProps.push(p[0]);
+                    let val = p[1];
+                    let unit = '';
+                    let uIndex = val.indexOf('*');
+                    if (uIndex > -1) {
+                        unit = val.slice(uIndex + 1, val.length);
+                        val = val.slice(1, -(unit.length+1) );
+                    }
+                    cssValues.push(val);
+                    observedProps.push(p[1].split('.')[0].trim());
+                    units.push(unit);
+                    node.style[p[0]] = scope.resolve(p[1]);
+                }
+                update(observedProps[0]);
+                scope.data.onUpdate.subscribe(update);
+                function update(prop) {
+                    if (observedProps.indexOf(prop) < -1) return;
+                    for (let i = 0; i < cssProps.length; i++) {
+                        let unit = (units[i])? units[i]: '';
+                        node.style[cssProps[i]] = scope.resolve(cssValues[i]) + unit + ' ';
+                    }
                 }
             }
-        }
+        },
     };
     let directiveNames = [
         "::",
         "#text",
         "#css"
     ];
-    global.directives = directives;
     /**
      * Define a jsFair module
      * @param meta
@@ -240,9 +254,9 @@
             if (!directives.hasOwnProperty(name)) return;
             directives[name].init(node, attr, scope);
         } else if (firstChar === ':') {
-
             directives['::'].init(node, name.substr(1), attr, scope);
         }
+        if (node.nodeType === 1) node.removeAttribute(name);
     }
     function fragmentFromString(strHTML) {
         let temp = document.createElement('template');
@@ -298,6 +312,10 @@
             if (element.hasOwnProperty("jsFairScope") ) return element.jsFairScope;
         }
     }
+    function getUID() {
+        return Math.floor(1 + Math.random() * 0xfffffffff).toString(16);
+    }
+
     class BaseComponent {
         constructor(name) {
             /** typeof {String} */
@@ -342,10 +360,6 @@
             this.scope.setData(data);
         }
     }
-
-    function getUID() {
-        return Math.floor(1 + Math.random() * 0xfffffffff).toString(16);
-    }
     class Scope {
         constructor(ref, ctx, type, subType) {
             let self = this;
@@ -355,7 +369,6 @@
             /** @type {Rx.Subject} */
             this.onDataUpdate = new Rx.Subject();
             this._data = {};
-            this.ref = ref;
             this.context = ctx;
             this.children = [];
             this.data = new Proxy(this._data, {
@@ -379,23 +392,38 @@
             /** @type {Scope} */
             this.parent = null;
             this._subscriptions = [];
+            this.ref = ref;
+            this.refObserver = null;
             ref.jsFairScope = this;
         }
         setData(data) {
             let self = this;
-            if (!data) throw "##";
+            if (!data) throw "First argument of setData must be an Object";
             for (let prop in data) {
                 if (!data.hasOwnProperty(prop)) continue;
-                if (typeof data[prop] === "object") {
-                    if (data[prop] instanceof Rx.Observable) {
-                        //link pipe
-                        this._data[prop] = null;
-                        observerHandler(data, prop);
-                        continue;
-                    }
+                switch (typeof data[prop]) {
+                    case 'object':
+                        if (data[prop] instanceof Rx.Observable) {
+                            //link pipe
+                            this._data[prop] = null;
+                            observerHandler(data, prop);
+                            continue;
+                        }
+                        this._data[prop] = data[prop];
+                        break;
+                    case 'string':
+                        let firstChar = data[prop].charAt(0);
+                        if (firstChar === '@') {
+                            //bind attribute
+                            this.bindAttribute(data[prop].slice(1), prop);
+                        }
+                        this._data[prop] = data[prop];
+                        break;
+                    default:
+                        this._data[prop] = data[prop];
                 }
-                this._data[prop] = data[prop];
-                this.onDataUpdate.next(prop);
+                // this._data[prop] = data[prop];
+                this.onDataUpdate.next(prop);//move after for
             }
             function observerHandler(data, prop) {
                 self._subscriptions.push(
@@ -403,6 +431,37 @@
                         self.data[prop] = d;
                     })
                 );
+            }
+        }
+        bindAttribute(attrName, propName) {
+            if (typeof attrName !== 'string' || typeof propName !== 'string') throw new Error("type of arguments must be string"); //@notLive
+            let self = this;
+            // create observer if not
+            if (!this.refObserver) {
+                console.log('create observer');
+                let observer = new MutationObserver(mutations => {
+                    mutations.forEach(mutation => {
+                        let index = observer._observedAttributNames.indexOf(mutation.attributeName);
+                        if (index < 0) return;
+                        updateData(mutation.attributeName, observer._mappedPropeties[index]);
+                    });
+                });
+                observer.observe(this.ref, {
+                    attributes: true, // childList: true, // characterData: true
+                });
+                observer._observedAttributNames = [attrName];
+                observer._mappedPropeties = [propName];
+                this.refObserver = observer;
+                updateData(attrName, propName);
+                return;
+            }
+            this.refObserver._observedAttributNames.push(attrName);
+            this.refObserver._mappedPropeties.push(propName);
+            updateData(attrName, propName);
+
+            function updateData(attr, prop) {
+                console.log('update data', attr, prop);
+                self.data[prop] = self.ref.getAttribute(attr) || '';
             }
         }
         resolveOnComps(property) {
@@ -417,7 +476,7 @@
          * @param write
          * @returns {{}}
          */
-        resolve(path, write) {
+        resolve2(path, write) {
             let parts;
 
             if (typeof path === "string") {
@@ -426,6 +485,7 @@
                     let match = /(\w*[^()])+\((.*)\)$/.exec(path);
                     //resolve function name
                     let func = this.resolveOnComps(match[1]);
+                    if (typeof func !== 'function') throw new Error("'" + match[1] + "' is not a valid method of component '"+ this.getComp().name + "'");//@notLive
                     //resolve all arguments
                     let args = match[2].split(",");
                     let resolvedArgs = [];
@@ -439,22 +499,38 @@
             } else {
                 parts = path;
             }
-            return parts.reduce(function(prev, curr, index) {
-                if (write && index >= parts.length - 1) {
-                    return prev ? prev[curr] = write : undefined
+            let firstProp = parts[0];
+            let result = parts.reduce(function(prev, curr, index) {
+                if (prev && write && index >= parts.length - 1) {
+                    return prev[curr] = write;
                 }
                 return prev ? prev[curr] : undefined
-            }, this._data );
+            }, this.data );
+            // if (write !== undefined) {
+            //     console.log(this.data[firstProp], write);
+            //     result = write;
+            // }
+            // setTimeout(()=> {
+            // if (write !== undefined)this.onDataUpdate.next(firstProp);
+            //
+            // });
+            return result;
         }
-        resolve2(property, write) {
+        resolve(property, write) {
             let parts;
 
             if (typeof property === "string") {
+                property = property.trim();
+                if (property.charAt(0) === "'") {
+                    if(property.charAt(property.length-1) !== "'") throw new Error("String not closed");//@notLive
+                    return property.slice(1, -1);
+                }
                 let isFunc = property.indexOf("(") > -1;
                 if (isFunc) {
                     let match = /(\w*[^()])+\((.*)\)$/.exec(property);
                     //resolve function name
                     let func = this.resolveOnComps(match[1]);
+                    if (typeof func !== 'function') throw new Error("'" + match[1] + "' is not a valid method of component '"+ this.getComp().name + "'");//@notLive
                     //resolve all arguments
                     let args = match[2].split(",");
                     let resolvedArgs = [];
@@ -469,9 +545,12 @@
                 parts = property;
             }
             if (this.data.has(parts[0])) {
-                let last = this.data[ parts[0] ];
-                for (let i = 1; i < parts.length; i++) {
+                let last = this.data;
+                for (let i = 0; i < parts.length; i++) {
                     if (last === null || last === undefined) return undefined;
+                    if (write !== undefined && i === parts.length - 1) {
+                        last[ parts[i] ] = write;
+                    }
                     last = last[ parts[i] ];
                 }
                 return last;
@@ -487,6 +566,15 @@
             this.children.push(scope);
             scope.parent = this;
         }
+        /**
+         * @returns {Component}
+         */
+        getComp() {
+            if (this.ref.hasOwnProperty("jsFairComponent"))
+                return this.ref.jsFairComponent;
+            else if (this.parent)
+                return this.parent.getComp();
+        }
         destroyAllChilds() {
             if (!this.children) return;
             for (let i = 0; i < this.children.length; i++) {
@@ -500,15 +588,6 @@
             if (index === false) return;
             this.children[index]._destroy();
             this.children.splice(index, 1);
-        }
-        /**
-         * @returns {Component}
-         */
-        getComp() {
-            if (this.ref.hasOwnProperty("jsFairComponent"))
-                return this.ref.jsFairComponent;
-            else if (this.parent)
-                return this.parent.getComp();
         }
         destroy() {
             this.parent.destroyChild(this);
@@ -555,6 +634,22 @@
             switch(node.nodeType) {
                 case 1:
                     let tagName = node.tagName;
+                    let attrNames = Array.from(node.attributes);
+                    let stopParse = false;
+                    for (let attr of attrNames) {
+                        let name = attr.name;
+                        let firstChar = name.charAt(0);
+                        if (firstChar !== "#" && firstChar !== ":") continue;
+                        if (name === '#dontparse') {
+                            stopParse = true;
+                            break;
+                        }
+                        initDirective(name, node, attr.nodeValue, scope);
+                    }
+                    if (stopParse) {
+                        node = node.nextSibling;
+                        continue;
+                    }
                     if (tagName) {
                         tagName = tagName.toLowerCase();
                         if (Components.hasOwnProperty(tagName)) {
@@ -562,12 +657,6 @@
                             node = node.nextSibling;
                             continue;
                         }
-                    }
-                    for (let i = 0; i < node.attributes.length; i++) {
-                        let name = node.attributes[i].name;
-                        let firstChar = name.charAt(0);
-                        if (firstChar !== "#" && firstChar !== ":") continue;
-                        initDirective(name, node, node.attributes[i].nodeValue, scope);
                     }
                     initSubTree(node, scope);
                     break;
@@ -629,19 +718,13 @@
         $(node).data("context", ctx);//@todo deprecated
         node.jsFairComponent = ctx;
         node.getComponent = () => {
-            //@todo mark as deprecated
+            //@todo mark as deprecated?
             return ctx;
         };
 
         getTemplate(componentName, (template) => {
             Components[componentName].init.call(ctx, global, $(template), args);
             initSubTree(template, compScope);
-            // console.dir(template)
-            // if (componentName === "page-overlay") {
-            //
-            //     console.dir(template)
-            //     console.dir(node)
-            // }
             node.appendChild(template);
 
             if (ctx.hasOwnProperty("onLoad") && typeof ctx.onLoad === "function") {
@@ -704,6 +787,8 @@
     window.jsFair.Scope = Scope;
     window.jsFair.Component = Component;
     window.jsFair.BaseComponent = BaseComponent;
+    window.jsFair.Directives = directives;
+    window.jsFair.Components = Components;
 
     function sendToInspector(com, data) {
         let d = {
@@ -731,23 +816,29 @@
 
 defineDirective({ name: "#for" }, function (node, attr, scope) {
     let template = document.createRange().createContextualFragment(node.innerHTML);
+    if (!node.innerHTML || !template.firstChild) {
+        console.log('no template in for');
+        return;
+    }
     node.innerHTML = '';
     while (template.firstChild.nodeType !== 1) {
         template.removeChild(template.firstChild);
     }
 
     //attr auslesen
-    let a = attr.match(/(\w*) (of|in|on) (\w*)/);
+    let a = attr.match(/(.*) (of|in) (.*)/);
     if (a.length !== 4) throw "Error in #for";//@notLive
-    let observProp = a[3].split(".")[0];
-    let _data = scope.resolve(a[3]) || [];
+    let loopType = a[2];
+    let scopeVars = a[1].split(',').map(e => e.trim());
+    let observedProp = a[3].split(".")[0];
+    let _data = scope.resolve(a[3]) || ((loopType === 'of')? []: {});
     let forScope = new jsFair.Scope(node, {onDestroy: discard}, "#for", a[3]);
     scope.add(forScope);
     redraw();
 
     scope.data.onUpdate.subscribe((prop) => {
         //@todo if dynamic update sub scopes
-        if (prop === observProp) redraw();
+        if (prop === observedProp) redraw();
     });
     //@todo add modes (dynamic)
     // function add(items) {}
@@ -755,15 +846,40 @@ defineDirective({ name: "#for" }, function (node, attr, scope) {
     function redraw() {
         forScope.destroyAllChilds();
         _data = scope.resolve(a[3]);
-        if (!Array.isArray(_data)) return;
         let fragment = document.createDocumentFragment();
-        for (let i = 0; i < _data.length; i++) {
-            let subFrag = template.cloneNode(true);
-            let itemScope = new jsFair.Scope(subFrag.firstChild, {onDestroy() {}}, a[1], "["+i+"]");
-            itemScope.data[a[1]] = _data[i];
-            forScope.add(itemScope);
-            jsFair.global.initSubTree(subFrag, itemScope);
-            fragment.append(subFrag);
+
+        if (loopType === 'of') {
+            if (typeof _data[Symbol.iterator] !== 'function') throw new Error("for of expects iterator, in Component '"+scope.getComp().name+"' at '" + attr + "'");//@notLive
+            if (typeof _data[Symbol.iterator] !== 'function') return;
+
+            for (let i of _data.keys()) {
+                let subFrag = template.cloneNode(true);
+                let itemScope = new jsFair.Scope(subFrag.firstChild, {
+                    onDestroy() {
+                    }
+                }, scopeVars[0], "[" + i + "]");
+                itemScope.data[scopeVars[0]] = _data[i];
+                itemScope.data[scopeVars[1]] = i;
+                forScope.add(itemScope);
+                jsFair.global.initSubTree(subFrag, itemScope);
+                fragment.append(subFrag);
+            }
+        } else if (loopType === 'in'){
+            if (typeof _data !== 'object') throw new Error("for in expects Object, in Component '"+scope.getComp().name+"' at '" + attr + "'");//@notLive
+            if (typeof _data !== 'object') return;
+
+            for (let key in _data) {
+                let subFrag = template.cloneNode(true);
+                let itemScope = new jsFair.Scope(subFrag.firstChild, {
+                    onDestroy() {
+                    }
+                }, scopeVars[0], "{" + key + "}");
+                itemScope.data[scopeVars[0]] = _data[key];
+                itemScope.data[scopeVars[1]] = key;
+                forScope.add(itemScope);
+                jsFair.global.initSubTree(subFrag, itemScope);
+                fragment.append(subFrag);
+            }
         }
         node.innerHTML = "";
         node.append(fragment);
@@ -843,14 +959,29 @@ defineDirective({ name: "#on" }, function (node, attr, scope) {
     }
 });
 defineDirective({ name: "#value" }, function (node, attr, scope) {
-    node.value = scope.resolve(attr);
-    let update = false;
-    scope.data.onUpdate.subscribe((prop) => {
-        update = true;
-        if (prop === attr.split(".")[0] ) node.value = scope.resolve(attr);
-    });
+    // let allowedTags = ['input, select, textarea'];
+    //@todo error for not allowed tags
+    //@todo error attr can't be a function call or if|then|else or compare
+    //@todo control input or change event
+    let type = node.getAttribute('type');
+    let targetAttr = (type === 'checkbox')? 'checked': 'value';
+    let observProp = attr.split(".")[0];
+    update(observProp);
+    scope.data.onUpdate.subscribe(update);
+    function update(prop) {
+        if (prop !== observProp) return;
+        if(targetAttr === 'checked') {
+            node.checked = scope.resolve(attr);
+        } else {
+            node.value = scope.resolve(attr);
+        }
+    }
     node.addEventListener('input', function (e) {
-        scope.resolve(attr, e.target.value);
+        if (targetAttr === 'checked') {
+            scope.resolve(attr, e.target.checked);
+        } else {
+            scope.resolve(attr, e.target.value);
+        }
     });
 });
 defineDirective({ name: "#data" }, function (node, attr, scope) {

@@ -1,6 +1,6 @@
-
-<!--<button #on="click:bla()" :class="testClass==comp">Run Test</button>-->
-<button #on="click:bla()" :class="flag?'blue'">Run Test</button>
+<h1>{{headLine}}</h1>
+<button #on="click:testResolve()" :class="testClass">Run Resolve test</button>
+<button #on="click:runTest()" :class="flag?'blue'">Run #for test</button>
 
 <div #on="click:.some-class:handlerFunc(this, event)">
     <div class="some-class">aaaa</div>
