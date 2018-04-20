@@ -9,12 +9,18 @@
 <br>
 
 
-<textarea #dontparse rows="3" disabled>
+<textarea #dontparse rows="7" disabled>
 <div #if="bool">
     <h1>Hidden Secret</h1>
+</div>
+<div #if="!bool">
+    <h1>Inverted hidden</h1>
 </div>
 </textarea>
 <div #if="bool">
     <h1>Hidden Secret</h1>
     <p>Trump is stupid</p>
+</div>
+<div #if="!bool">
+    <h1>Inverted if</h1>
 </div>
