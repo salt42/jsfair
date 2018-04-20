@@ -890,6 +890,44 @@ defineDirective({ name: "#for" }, function (node, attr, scope) {
     }
 });
 defineDirective({ name: "#on" }, function (node, attr, scope) {
+    //attr auslesen
+    let comp = scope.getComp();
+    let events = attr.split(";");
+    for (let event of events) {
+        createEventHandler(event);
+    }
+    function createEventHandler(event) {
+        let match;
+        let e = event.split(":");
+        let isFilter = (e.length === 3);
+        let filter = e[1];
+        event = (isFilter)? e[2]: e[1];
+        match = event.match(/(\w*)\(([\w,\s.]*)\)/);
+        // if (match.length !== 4) throw "Error in #for";//@notLive
+        // while ((match = /(\w*):(\w*)\(([\w,\s.]*)\)/g.exec(attr)) != null) {}
+        let eventType = e[0];
+        let eventHandler = match[1];
+        let eventHandlerArgs = match[2].replace(/\s/g, '').split(",");
+        node.addEventListener(eventType, function (e) {
+            let targetNode = node;
+            let targetScope = scope;
+            if (isFilter) {
+                targetNode = hasParent(e.target, filter);
+                if (targetNode.hasOwnProperty("jsFairScope") ) targetScope = targetNode.jsFairScope;
+                if (!targetNode) return;
+            }
+            let args = [];
+            for (let i = 0; i < eventHandlerArgs.length; i++) {
+                args.push(resolve(eventHandlerArgs[i], e, targetNode, targetScope));
+            }
+            if (typeof comp[eventHandler] === "function") comp[eventHandler](...args);
+        });
+    }
+    function resolve(name, event, node, scope) {
+        if (name === "event") return event;
+        if (name === "this") return node;
+        return scope.resolve(name);
+    }
     /**
      * @private
      * @param  {Element} elem     Starting element
@@ -918,45 +956,6 @@ defineDirective({ name: "#on" }, function (node, attr, scope) {
             if ( elem.matches( selector ) ) return elem;
         }
         return false;
-    }
-    //attr auslesen
-    let comp = scope.getComp();
-    let events = attr.split("::");
-    for (let event of events) {
-        createEventHandler(event);
-    }
-    function createEventHandler(event) {
-        let match;
-        let e = event.split(":");
-        let isFilter = (e.length === 3);
-        let filter = e[1];
-        event = (isFilter)? e[2]: e[1];
-        match = event.match(/(\w*)\(([\w,\s.]*)\)/);
-        // if (match.length !== 4) throw "Error in #for";//@notLive
-        // while ((match = /(\w*):(\w*)\(([\w,\s.]*)\)/g.exec(attr)) != null) {}
-        let eventType = e[0];
-        let eventHandler = match[1];
-        let eventHandlerArgs = match[2].replace(/\s/g, '').split(",");
-        node.addEventListener(eventType, function (e) {
-            let targetNode = node;
-            let targetScope = scope;
-            if (isFilter) {
-                targetNode = hasParent(e.target, filter);
-                if (targetNode.hasOwnProperty("jsFairScope") ) targetScope = targetNode.jsFairScope;
-                // console.dir(targetNode)
-                if (!targetNode) return;
-            }
-            let args = [];
-            for (let i = 0; i < eventHandlerArgs.length; i++) {
-                args.push(resolve(eventHandlerArgs[i], e, targetNode, targetScope));
-            }
-            if (typeof comp[eventHandler] === "function") comp[eventHandler](...args);
-        });
-    }
-    function resolve(name, event, node, scope) {
-        if (name === "event") return event;
-        if (name === "this") return node;
-        return scope.resolve(name);
     }
 });
 defineDirective({ name: "#value" }, function (node, attr, scope) {
@@ -995,19 +994,20 @@ defineDirective({ name: "#data" }, function (node, attr, scope) {
         if (prop === a[1].split(".")[0] ) node.dataset[a[0]] = scope.resolve(a[1]);
     });
 });
-// defineDirective({ name: "#if" }, function (node, attr, scope) {
-//     // #classif="VAR:classname"
-//     let a = attr.split(":");
-//     let observProp = a[0].split(".")[0];
-//     let className = a[1];
-//     let value = scope.resolve(a[0]);
-//     scope.data.onUpdate.subscribe((prop) => {
-//         if (prop === observProp) {
-//             value = scope.resolve(a[0]);
-//             if (value)
-//                 node.classList.add(className);
-//             else
-//                 node.classList.remove(className);
-//         }
-//     });
-// });
+defineDirective({ name: "#if" }, function (node, attr, scope) {
+    let inverted = (attr.charAt(0) === '!');
+    let prop = (inverted)? attr.slice(1): attr;
+    let observedProp = prop.split(".")[0];
+    update(prop);
+    scope.data.onUpdate(update);
+    function update(prop) {
+        if (prop === observedProp) {
+            let value = scope.resolve(prop);
+            value = (inverted)? !value: value;
+            if (value)
+                node.style.display = '';
+            else
+                node.style.display = 'none';
+        }
+    }
+});

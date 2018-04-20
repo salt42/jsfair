@@ -1,5 +1,5 @@
 <style>
-    d-on {}
+    d-on .active {background-color: greenyellow}
 </style>
 <p>Bind event handler</p>
 
@@ -19,6 +19,20 @@
 <div #on="click:p:clickHandler(event, this, clickCount)">
     not clickable
     <p style="cursor: pointer">clickable</p>
+</div>
+<span>Click count: {{clickCount}}</span>
+<br><br>
+
+
+<textarea #dontparse rows="5" disabled>
+<div #on="click:p:clickHandler(event, this, clickCount)">
+    not clickable
+    <p>clickable</p>
+</div>
+</textarea>
+<div #on="mouseenter:mouseEnterHandler(event, this);mouseleave:mouseLeaveHandler(event, this);click:p:clickHandler(event, this, clickCount)" :class="hover?'active'">
+    clickable handler 1
+    <p style="cursor: pointer">clickable handler 2</p>
 </div>
 <span>Click count: {{clickCount}}</span>
 <br><br>
