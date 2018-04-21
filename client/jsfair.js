@@ -40,8 +40,6 @@
              * @param attr
              * @param {Scope} scope
              */
-            //<dsda>  ...  <span :class="VAR?dsa:dsa+"></span>
-            //<dsda>  ...  <span :class="VAR+var"></span>
             init: function(node, targetAttr, attr, scope) {
                 //parse attr
                 let final = attr.split('+');
@@ -71,8 +69,11 @@
                     when = [when];
                 }
                 update(watch[0]);
-                scope.onDataUpdate.subscribe(update);
+
+                scope.onUpdate(watch, update);
+                // scope.onDataUpdate.subscribe(update);
                 function update(prop) {
+                    console.log(prop,watch.indexOf(prop), watch);
                     if (watch.indexOf(prop) < 0) return;
                     let rWhen = resolveCompare();
                     let rFinal;
@@ -83,8 +84,12 @@
                     }
                     if (then) {
                         let att;
+                        console.log(rWhen , els);
                         let c = (rWhen)? then: els;
-                        if (c === false) c = "'";
+                        if (c === false) {
+                            node.setAttribute(targetAttr, rFinal);
+                            return;
+                        }
                         att = scope.resolve(c);
                         att += rFinal;
                         node.setAttribute(targetAttr, att);
@@ -397,6 +402,17 @@
             this.ref = ref;
             this.refObserver = null;
             ref.jsFairScope = this;
+        }
+        onUpdate(key, fn) {
+            if (typeof key === 'string') key = [key];
+            for (let i = 0; i < key.length; i++) {
+                //find next scope with key, and register handler on it
+                if (!this._data.hasOwnProperty(key[i]) ) {
+                    this.parent.onUpdate(key[i], fn);
+                } else {
+                    this.onDataUpdate.subscribe(fn);
+                }
+            }
         }
         setData(data) {
             let self = this;
