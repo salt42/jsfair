@@ -30,7 +30,7 @@
         ModuleNames = [],
         Components = {},
         ComponentNames = [];
-
+let count = 0;
     let directives = {
         "::": {
             name: "::",
@@ -42,6 +42,7 @@
              */
             init: function(node, targetAttr, attr, scope) {
                 //parse attr
+                count++;
                 let final = attr.split('+');
                 let so = final[0].split('?');
                 final = (final.length > 1) ? final[1] : false;
@@ -69,11 +70,9 @@
                     when = [when];
                 }
                 update(watch[0]);
-
-                scope.onUpdate(watch, update);
-                // scope.onDataUpdate.subscribe(update);
+                // scope.onUpdate(watch, update);
+                scope.data.onUpdate(update);
                 function update(prop) {
-                    console.log(prop,watch.indexOf(prop), watch);
                     if (watch.indexOf(prop) < 0) return;
                     let rWhen = resolveCompare();
                     let rFinal;
@@ -84,7 +83,6 @@
                     }
                     if (then) {
                         let att;
-                        console.log(rWhen , els);
                         let c = (rWhen)? then: els;
                         if (c === false) {
                             node.setAttribute(targetAttr, rFinal);
@@ -373,6 +371,7 @@
             this.subType = subType;
             /** @type {Rx.Subject} */
             this.onDataUpdate = new Rx.Subject();
+            this.onDestroy = new Rx.Subject();
             this._data = {};
             this.context = ctx;
             this.children = [];
@@ -403,14 +402,30 @@
             this.refObserver = null;
             ref.jsFairScope = this;
         }
-        onUpdate(key, fn) {
+        onUpdate(key, fn, _triggerScopeType) {
             if (typeof key === 'string') key = [key];
+            if (!_triggerScopeType) _triggerScopeType = this.subType;
             for (let i = 0; i < key.length; i++) {
-                //find next scope with key, and register handler on it
+                if (!key[i] || key[i].charAt(0) === "'") continue;
+                let isFunc = key[i].indexOf("(") > -1;
+                if (isFunc) {
+                    let match = /(\w*[^()])+\((.*)\)$/.exec(key[i]);
+                    let func = this.resolveOnComps(match[1]);
+                    if (typeof func !== 'function') throw new Error("Can't resolve function '" + key[i] + "' used in component " + _triggerScopeType);//@notLive
+                    let args = match[2].split(",");
+                    if (args.length > 0) this.onUpdate(args, fn, _triggerScopeType);
+                    continue;
+                }
                 if (!this._data.hasOwnProperty(key[i]) ) {
-                    this.parent.onUpdate(key[i], fn);
+                    if (this.parent){
+                        console.log('search upper -> ', key[i], this.type);
+                        this.parent.onUpdate(key[i], fn, _triggerScopeType);
+                        return;
+                    }
+                    throw new Error("Can't resolve '" + key[i] + "' used in component " + this.getComp().name );
                 } else {
                     this.onDataUpdate.subscribe(fn);
+                    // this._subscriptions.push(this.onDataUpdate.subscribe(fn));
                 }
             }
         }
@@ -486,53 +501,6 @@
                 return this.context[property];
             return (this.parent)? this.parent.resolveOnComps(property): undefined;
         }
-
-        /**
-         * optimization. only split :/
-         * @param path
-         * @param write
-         * @returns {{}}
-         */
-        resolve2(path, write) {
-            let parts;
-
-            if (typeof path === "string") {
-                let isFunc = path.indexOf("(") > -1;
-                if (isFunc) {
-                    let match = /(\w*[^()])+\((.*)\)$/.exec(path);
-                    //resolve function name
-                    let func = this.resolveOnComps(match[1]);
-                    if (typeof func !== 'function') throw new Error("'" + match[1] + "' is not a valid method of component '"+ this.getComp().name + "'");//@notLive
-                    //resolve all arguments
-                    let args = match[2].split(",");
-                    let resolvedArgs = [];
-                    for (let arg of args) {
-                        resolvedArgs.push(this.resolve(arg) );
-                    }
-                    //run function
-                    return func.apply(null, resolvedArgs);
-                }
-                parts = path.split(".");
-            } else {
-                parts = path;
-            }
-            let firstProp = parts[0];
-            let result = parts.reduce(function(prev, curr, index) {
-                if (prev && write && index >= parts.length - 1) {
-                    return prev[curr] = write;
-                }
-                return prev ? prev[curr] : undefined
-            }, this.data );
-            // if (write !== undefined) {
-            //     console.log(this.data[firstProp], write);
-            //     result = write;
-            // }
-            // setTimeout(()=> {
-            // if (write !== undefined)this.onDataUpdate.next(firstProp);
-            //
-            // });
-            return result;
-        }
         resolve(property, write) {
             let parts;
 
@@ -560,6 +528,10 @@
                 parts = property.split(".");
             } else {
                 parts = property;
+            }
+            if (!this.data) {
+                console.log(this);
+                console.log(property);
             }
             if (this.data.has(parts[0])) {
                 let last = this.data;
@@ -853,15 +825,17 @@ defineDirective({ name: "#for" }, function (node, attr, scope) {
     scope.add(forScope);
     redraw();
 
-    scope.data.onUpdate((prop) => {
-        //@todo if dynamic update sub scopes
-        if (prop === observedProp) redraw();
-    });
+    scope.onUpdate(observedProp, redraw);
+    // scope.data.onUpdate((prop) => {
+    //     //@todo if dynamic update sub scopes
+    //     if (prop === observedProp) redraw();
+    // });
     //@todo add modes (dynamic)
     // function add(items) {}
     // function remove(items) {}
     function redraw() {
         forScope.destroyAllChilds();
+        node.innerHTML = "";
         _data = scope.resolve(a[3]);
         if (!_data) return;
         let fragment = document.createDocumentFragment();
@@ -876,7 +850,7 @@ defineDirective({ name: "#for" }, function (node, attr, scope) {
                     }
                 }, scopeVars[0], "[" + i + "]");
                 itemScope.data[scopeVars[0]] = _data[i];
-                itemScope.data[scopeVars[1]] = i;
+                if (scopeVars.length > 1) itemScope.data[scopeVars[1]] = i;
                 forScope.add(itemScope);
                 jsFair.global.initSubTree(subFrag, itemScope);
                 fragment.append(subFrag);
@@ -892,13 +866,12 @@ defineDirective({ name: "#for" }, function (node, attr, scope) {
                     }
                 }, scopeVars[0], "{" + key + "}");
                 itemScope.data[scopeVars[0]] = _data[key];
-                itemScope.data[scopeVars[1]] = key;
+                if (scopeVars.length > 1) itemScope.data[scopeVars[1]] = key;
                 forScope.add(itemScope);
                 jsFair.global.initSubTree(subFrag, itemScope);
                 fragment.append(subFrag);
             }
         }
-        node.innerHTML = "";
         node.append(fragment);
     }
     function discard() {
@@ -919,8 +892,6 @@ defineDirective({ name: "#on" }, function (node, attr, scope) {
         let filter = e[1];
         event = (isFilter)? e[2]: e[1];
         match = event.match(/(\w*)\(([\w,\s.]*)\)/);
-        // if (match.length !== 4) throw "Error in #for";//@notLive
-        // while ((match = /(\w*):(\w*)\(([\w,\s.]*)\)/g.exec(attr)) != null) {}
         let eventType = e[0];
         let eventHandler = match[1];
         let eventHandlerArgs = match[2].replace(/\s/g, '').split(",");
@@ -981,6 +952,7 @@ defineDirective({ name: "#value" }, function (node, attr, scope) {
     //@todo control input or change event
     let type = node.getAttribute('type');
     let targetAttr = (type === 'checkbox')? 'checked': 'value';
+    let event = (type === 'checkbox')? 'change': 'input';//@todo check radio buttons
     let observProp = attr.split(".")[0];
     update(observProp);
     scope.data.onUpdate(update);
@@ -992,7 +964,7 @@ defineDirective({ name: "#value" }, function (node, attr, scope) {
             node.value = scope.resolve(attr);
         }
     }
-    node.addEventListener('input', function (e) {
+    node.addEventListener(event, function (e) {
         if (targetAttr === 'checked') {
             scope.resolve(attr, e.target.checked);
         } else {
@@ -1005,7 +977,6 @@ defineDirective({ name: "#data" }, function (node, attr, scope) {
     if (a.length !== 2) throw "Error in #data";//@notLive
 
     node.dataset[a[0]] = scope.resolve(a[1]);
-    node.removeAttribute("#data");
     scope.data.onUpdate.subscribe((prop) => {
         if (prop === a[1].split(".")[0] ) node.dataset[a[0]] = scope.resolve(a[1]);
     });
