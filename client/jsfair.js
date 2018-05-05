@@ -30,7 +30,6 @@
         ModuleNames = [],
         Components = {},
         ComponentNames = [];
-let count = 0;
     let directives = {
         "::": {
             name: "::",
@@ -42,7 +41,6 @@ let count = 0;
              */
             init: function(node, targetAttr, attr, scope) {
                 //parse attr
-                count++;
                 let final = attr.split('+');
                 let so = final[0].split('?');
                 final = (final.length > 1) ? final[1] : false;
@@ -417,12 +415,11 @@ let count = 0;
                     continue;
                 }
                 if (!this._data.hasOwnProperty(key[i]) ) {
-                    if (this.parent){
-                        console.log('search upper -> ', key[i], this.type);
+                    if (this.parent) {
                         this.parent.onUpdate(key[i], fn, _triggerScopeType);
                         return;
                     }
-                    throw new Error("Can't resolve '" + key[i] + "' used in component " + this.getComp().name );
+                    throw new Error("Can't resolve '" + key[i] + "' ");//@notLive
                 } else {
                     this.onDataUpdate.subscribe(fn);
                     // this._subscriptions.push(this.onDataUpdate.subscribe(fn));
@@ -447,8 +444,33 @@ let count = 0;
                     case 'string':
                         let firstChar = data[prop].charAt(0);
                         if (firstChar === '@') {
-                            //bind attribute
-                            this.bindAttribute(data[prop].slice(1), prop);
+                            if (data[prop].charAt(1) === '@') {
+                                //bind attribute bidirectional
+                                let attributeName = data[prop].slice(2);
+                                let parentProp = this.ref.getAttribute(attributeName);
+                                if (parentProp === null) throw new Error("Attribute '"+ attributeName +"' not found on " + this.context); //@notLive
+                                let scope = this.resolve2scope(parentProp);
+                                if (!scope) {
+                                    this.bindAttribute(data[prop].slice(2), prop);
+                                    break;
+                                    // throw new Error("Property '"+ parentProp +"' not found in parent Scopes");
+                                }
+                                let lock = false;
+                                this._data[prop] = scope.resolve(parentProp);
+                                scope.onUpdate(parentProp.split('.')[0], () => {
+                                    //value changed in parent scope
+                                    if (lock) return lock = false;
+                                    this.data[prop] = scope.resolve(parentProp);
+                                });
+                                this.onUpdate(prop, () => {
+                                    //value changed in this scope
+                                    lock = true;
+                                    scope.resolve(parentProp, this.data[prop]);
+                                });
+                            } else {
+                                //bind attribute
+                                this.bindAttribute(data[prop].slice(1), prop);
+                            }
                         } else {
                             this._data[prop] = data[prop];
                         }
@@ -501,6 +523,25 @@ let count = 0;
                 return this.context[property];
             return (this.parent)? this.parent.resolveOnComps(property): undefined;
         }
+        resolve2scope(property) {
+            let parts;
+
+            if (typeof property === "string") {
+                property = property.trim();
+                if (property.charAt(0) === "'") {
+                    if(property.charAt(property.length-1) !== "'") throw new Error("String not closed");//@notLive
+                    return undefined;
+                }
+                parts = property.split(".");
+            } else {
+                parts = property;
+            }
+            if (this.data.has(parts[0])) {
+                return this;
+            } else {
+                return (this.parent)? this.parent.resolve2scope(parts): undefined;
+            }
+        }
         resolve(property, write) {
             let parts;
 
@@ -529,10 +570,6 @@ let count = 0;
             } else {
                 parts = property;
             }
-            if (!this.data) {
-                console.log(this);
-                console.log(property);
-            }
             if (this.data.has(parts[0])) {
                 let last = this.data;
                 for (let i = 0; i < parts.length; i++) {
@@ -544,7 +581,6 @@ let count = 0;
                 }
                 return last;
             } else {
-                // console.log("resolve -> next");
                 return (this.parent)? this.parent.resolve(parts): undefined;
             }
         }
