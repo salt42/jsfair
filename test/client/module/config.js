@@ -8,6 +8,13 @@ define('Config', function () {
             ]
         },
         {
+            name: "binding",
+            url: "/binding",
+            sections: [
+                ["main", "bind"],
+            ]
+        },
+        {
             name: "reference",
             url: "/",
             sections: [
