@@ -112,11 +112,12 @@
                 let staticParts = [];
                 let properties = [];
                 let lastIndex = 0;
-
+                let observProps = [];
                 if (!node.textContent.match(re) ) return;
                 while ((match = re.exec(node.textContent)) != null) {
                     staticParts.push(node.textContent.substring(lastIndex, match.index));
                     properties.push(match[1]);
+                    observProps.push(match[1].split('.') );
                     lastIndex = match.index + match[0].length;
                 }
                 function update() {
@@ -128,10 +129,13 @@
                     node.textContent = res;
                 }
                 update();
-                scope.data.onUpdate((prop) => {
-                    // if (prop === "" ) {
-                    update();
+                scope.onUpdate(observProps, (v) => {
+                    console.log(v);
                 });
+                // scope.data.onUpdate((prop) => {
+                //     if (prop === "" )
+                //         update();
+                // });
             }
         },
         "#css": {
@@ -326,6 +330,8 @@
             /** typeof {Object} */
             this.data;
         }
+
+        /** @param {Scope} scope */
         setScope(scope) {
             this.scope = scope;
             this.data = scope.data;
@@ -341,24 +347,16 @@
             this.$ele = null;
             this.template = null;
         }
-        observeAttributes(fn) {
-            //todo
-            // let observer = new MutationObserver(function(mutations) {
-            //     mutations.forEach(function(mutation) {
-            //         console.log(mutation.type);
-            //     });
-            // });
-            // observer.observe($element[0], {
-            //     attributes: true,
-            //     childList: true,
-            //     characterData: true
-            // });
-        }
         model(data) {
             this.scope.setData(data);
         }
         setData(data) {
             this.scope.setData(data);
+        }
+        updateValue(path, value) {
+            let name = path.split('.')[0];
+            if (!this.data.has(name)) throw new Error("propetie '" + name + "' not found"); //@notLive
+            this.scope.resolve(path, value);
         }
     }
     class Scope {
@@ -404,7 +402,7 @@
             if (typeof key === 'string') key = [key];
             if (!_triggerScopeType) _triggerScopeType = this.subType;
             for (let i = 0; i < key.length; i++) {
-                if (!key[i] || key[i].charAt(0) === "'") continue;
+                if (typeof key[i] !== 'string' || key[i].charAt(0) === "'") continue;
                 let isFunc = key[i].indexOf("(") > -1;
                 if (isFunc) {
                     let match = /(\w*[^()])+\((.*)\)$/.exec(key[i]);
@@ -422,7 +420,6 @@
                     throw new Error("Can't resolve '" + key[i] + "' ");//@notLive
                 } else {
                     this.onDataUpdate.subscribe(fn);
-                    // this._subscriptions.push(this.onDataUpdate.subscribe(fn));
                 }
             }
         }
@@ -571,11 +568,14 @@
                 parts = property;
             }
             if (this.data.has(parts[0])) {
-                let last = this.data;
+                let last = this._data;
                 for (let i = 0; i < parts.length; i++) {
                     if (last === null || last === undefined) return undefined;
                     if (write !== undefined && i === parts.length - 1) {
                         last[ parts[i] ] = write;
+                        setTimeout(() => {
+                            this.onDataUpdate.next(parts[0]);
+                        })
                     }
                     last = last[ parts[i] ];
                 }
@@ -1019,15 +1019,27 @@ defineDirective({ name: "#data" }, function (node, attr, scope) {
 });
 defineDirective({ name: "#if" }, function (node, attr, scope) {
     let inverted = (attr.charAt(0) === '!');
-    let prop = (inverted)? attr.slice(1): attr;
-    let observedProp = prop.split(".")[0];
-    update(prop);
+    attr = (inverted)? attr.slice(1): attr;
+    let props = attr.split("==");
+    let observedProps = props.map((value, index, array)=> {
+        return value.split(".")[0];
+    });
+    // prop.split(".")[0];
+    update(props[0]);
     scope.data.onUpdate(update);
     function update(prop) {
-        if (prop === observedProp) {
-            let value = scope.resolve(prop);
-            value = (inverted)? !value: value;
-            if (value)
+        // console.log(prop);
+        // if (prop)
+        if (observedProps.indexOf(prop) > -1) {
+            let equal = props
+                .map((value) => {
+                    let v = scope.resolve(value);
+                    return (v === undefined)? value: v;
+                })
+                .reduce((a, b) => (a == b)? true: false);
+
+            // equal = (inverted)? !equal: equal;
+            if ((inverted)? !equal: equal)
                 node.style.display = '';
             else
                 node.style.display = 'none';
