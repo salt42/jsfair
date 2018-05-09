@@ -23,7 +23,9 @@
     /**
      * @namespace Global
      */
-    const global = {};
+    const global = {
+        DEPRECATED_WARNING: true,
+    };
     /** @type {Scope} */
     let rootScope;
     let Modules = {},
@@ -67,11 +69,9 @@
                     watch.push(when.split(".")[0]);
                     when = [when];
                 }
-                update(watch[0]);
-                // scope.onUpdate(watch, update);
-                scope.data.onUpdate(update);
+                update();
+                scope.onUpdate(watch, update);
                 function update(prop) {
-                    if (watch.indexOf(prop) < 0) return;
                     let rWhen = resolveCompare();
                     let rFinal;
                     if (final === false) {
@@ -112,12 +112,10 @@
                 let staticParts = [];
                 let properties = [];
                 let lastIndex = 0;
-                let observProps = [];
                 if (!node.textContent.match(re) ) return;
                 while ((match = re.exec(node.textContent)) != null) {
                     staticParts.push(node.textContent.substring(lastIndex, match.index));
                     properties.push(match[1]);
-                    observProps.push(match[1].split('.') );
                     lastIndex = match.index + match[0].length;
                 }
                 function update() {
@@ -129,13 +127,9 @@
                     node.textContent = res;
                 }
                 update();
-                scope.onUpdate(observProps, (v) => {
-                    console.log(v);
+                scope.onUpdate(properties, (v) => {
+                    update();
                 });
-                // scope.data.onUpdate((prop) => {
-                //     if (prop === "" )
-                //         update();
-                // });
             }
         },
         "#css": {
@@ -163,12 +157,12 @@
                         val = val.slice(1, -(unit.length+1) );
                     }
                     cssValues.push(val);
-                    observedProps.push(p[1].split('.')[0].trim());
+                    observedProps.push(p[1].replace(/\*.*/, ''));
                     units.push(unit);
                     node.style[p[0]] = scope.resolve(p[1]);
                 }
                 update(observedProps[0]);
-                scope.data.onUpdate(update);
+                scope.onUpdate(observedProps, update);
                 function update(prop) {
                     if (observedProps.indexOf(prop) < -1) return;
                     for (let i = 0; i < cssProps.length; i++) {
@@ -357,6 +351,7 @@
             let name = path.split('.')[0];
             if (!this.data.has(name)) throw new Error("propetie '" + name + "' not found"); //@notLive
             this.scope.resolve(path, value);
+            this.scope.onDataUpdate.next(path.split('.')[0]);
         }
     }
     class Scope {
@@ -377,6 +372,7 @@
                         case "has":
                             return target.hasOwnProperty;
                         case "onUpdate":
+                            if (global.DEPRECATED_WARNING) console.error('DEPRECATED -> use Scope.onUpdate(...) instead');
                             return (...args) => {
                                 self.onDataUpdate.subscribe(...args);
                             };
@@ -398,28 +394,36 @@
             this.refObserver = null;
             ref.jsFairScope = this;
         }
-        onUpdate(key, fn, _triggerScopeType) {
-            if (typeof key === 'string') key = [key];
+        onUpdate(keys, fn, _triggerScopeType) {
+            if (typeof keys === 'string') keys = [keys];
             if (!_triggerScopeType) _triggerScopeType = this.subType;
-            for (let i = 0; i < key.length; i++) {
-                if (typeof key[i] !== 'string' || key[i].charAt(0) === "'") continue;
-                let isFunc = key[i].indexOf("(") > -1;
+            for (let i = 0; i < keys.length; i++) {
+                let key = keys[i].trim();
+                if (typeof key !== 'string' || key.charAt(0) === "'") continue;
+                let isFunc = key.indexOf("(") > -1;
                 if (isFunc) {
-                    let match = /(\w*[^()])+\((.*)\)$/.exec(key[i]);
+                    let match = /(\w*[^()])+\((.*)\)$/.exec(key);
                     let func = this.resolveOnComps(match[1]);
-                    if (typeof func !== 'function') throw new Error("Can't resolve function '" + key[i] + "' used in component " + _triggerScopeType);//@notLive
-                    let args = match[2].split(",");
+                    if (typeof func !== 'function') throw new Error("Can't resolve function '" + key + "' used in component " + _triggerScopeType);//@notLive
+                    if (match[2] === '') continue;
+                    let args = match[2]
+                        .split(",")
+                        .map(v => v.trim());
                     if (args.length > 0) this.onUpdate(args, fn, _triggerScopeType);
                     continue;
                 }
-                if (!this._data.hasOwnProperty(key[i]) ) {
+                let prop = key.split('.')[0];
+                if (!this._data.hasOwnProperty(prop) ) {
                     if (this.parent) {
-                        this.parent.onUpdate(key[i], fn, _triggerScopeType);
-                        return;
+                        this.parent.onUpdate(key, fn, _triggerScopeType);
+                    } else {
+                        if (!isNaN(Number(key))) continue;
+                        throw new Error("Can't resolve '" + key + "' ");//@notLive
                     }
-                    throw new Error("Can't resolve '" + key[i] + "' ");//@notLive
                 } else {
-                    this.onDataUpdate.subscribe(fn);
+                    this.onDataUpdate
+                        .filter(p => p === prop)
+                        .subscribe(fn);
                 }
             }
         }
@@ -454,15 +458,17 @@
                                 }
                                 let lock = false;
                                 this._data[prop] = scope.resolve(parentProp);
-                                scope.onUpdate(parentProp.split('.')[0], () => {
+                                scope.onUpdate(parentProp, () => {
                                     //value changed in parent scope
-                                    if (lock) return lock = false;
+                                    lock = true;
                                     this.data[prop] = scope.resolve(parentProp);
+                                    lock = false;
                                 });
                                 this.onUpdate(prop, () => {
                                     //value changed in this scope
-                                    lock = true;
+                                    if (lock) return;
                                     scope.resolve(parentProp, this.data[prop]);
+                                    scope.onDataUpdate.next(parentProp.split('.')[0]);
                                 });
                             } else {
                                 //bind attribute
@@ -573,9 +579,6 @@
                     if (last === null || last === undefined) return undefined;
                     if (write !== undefined && i === parts.length - 1) {
                         last[ parts[i] ] = write;
-                        setTimeout(() => {
-                            this.onDataUpdate.next(parts[0]);
-                        })
                     }
                     last = last[ parts[i] ];
                 }
@@ -695,7 +698,6 @@
         }
     }
     global.initSubTree = initSubTree;
-
     /**
      * @memberOf {array<Element> | jquery} Global
      * @param $nodes
@@ -855,20 +857,13 @@ defineDirective({ name: "#for" }, function (node, attr, scope) {
     if (a.length !== 4) throw "Error in #for";//@notLive
     let loopType = a[2];
     let scopeVars = a[1].split(',').map(e => e.trim());
-    let observedProp = a[3].split(".")[0];
+    let observedProp = a[3];
     let _data = scope.resolve(a[3]) || ((loopType === 'of')? []: {});
     let forScope = new jsFair.Scope(node, {onDestroy: discard}, "#for", a[3]);
     scope.add(forScope);
     redraw();
 
     scope.onUpdate(observedProp, redraw);
-    // scope.data.onUpdate((prop) => {
-    //     //@todo if dynamic update sub scopes
-    //     if (prop === observedProp) redraw();
-    // });
-    //@todo add modes (dynamic)
-    // function add(items) {}
-    // function remove(items) {}
     function redraw() {
         forScope.destroyAllChilds();
         node.innerHTML = "";
@@ -989,11 +984,9 @@ defineDirective({ name: "#value" }, function (node, attr, scope) {
     let type = node.getAttribute('type');
     let targetAttr = (type === 'checkbox')? 'checked': 'value';
     let event = (type === 'checkbox')? 'change': 'input';//@todo check radio buttons
-    let observProp = attr.split(".")[0];
-    update(observProp);
-    scope.data.onUpdate(update);
-    function update(prop) {
-        if (prop !== observProp) return;
+    update();
+    scope.onUpdate(attr, update);
+    function update() {
         if(targetAttr === 'checked') {
             node.checked = scope.resolve(attr);
         } else {
@@ -1006,43 +999,35 @@ defineDirective({ name: "#value" }, function (node, attr, scope) {
         } else {
             scope.resolve(attr, e.target.value);
         }
+        scope.onDataUpdate.next(attr.split('.')[0]);
     });
 });
 defineDirective({ name: "#data" }, function (node, attr, scope) {
     let a = attr.split(":");
     if (a.length !== 2) throw "Error in #data";//@notLive
 
-    node.dataset[a[0]] = scope.resolve(a[1]);
-    scope.data.onUpdate.subscribe((prop) => {
-        if (prop === a[1].split(".")[0] ) node.dataset[a[0]] = scope.resolve(a[1]);
-    });
+    update();
+    scope.onUpdate(a[1], update);
+    function update() {
+        node.dataset[a[0]] = scope.resolve(a[1]);
+    }
 });
 defineDirective({ name: "#if" }, function (node, attr, scope) {
     let inverted = (attr.charAt(0) === '!');
     attr = (inverted)? attr.slice(1): attr;
     let props = attr.split("==");
-    let observedProps = props.map((value, index, array)=> {
-        return value.split(".")[0];
-    });
-    // prop.split(".")[0];
-    update(props[0]);
-    scope.data.onUpdate(update);
-    function update(prop) {
-        // console.log(prop);
-        // if (prop)
-        if (observedProps.indexOf(prop) > -1) {
-            let equal = props
-                .map((value) => {
-                    let v = scope.resolve(value);
-                    return (v === undefined)? value: v;
-                })
-                .reduce((a, b) => (a == b)? true: false);
-
-            // equal = (inverted)? !equal: equal;
-            if ((inverted)? !equal: equal)
-                node.style.display = '';
-            else
-                node.style.display = 'none';
-        }
+    update();
+    scope.onUpdate(props, update);
+    function update() {
+        let equal = props
+            .map((value) => {
+                let v = scope.resolve(value);
+                return (v === undefined)? value: v;
+            })
+            .reduce((a, b) => (a == b)? true: false);
+        if ((inverted)? !equal: equal)
+            node.style.display = '';
+        else
+            node.style.display = 'none';
     }
 });
