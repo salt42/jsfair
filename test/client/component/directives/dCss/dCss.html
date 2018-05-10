@@ -1,0 +1,38 @@
+<style>
+    d-css {}
+</style>
+
+<div class="controls">
+    <label>
+        <span>size</span>
+        <input type="range" #value="size" min="2" max="100">
+        <input :value="size" disabled style="width: 30px">
+    </label>
+    <label>
+        <span>borderColor</span>
+        <input type="color" #value="borderColor">
+    </label>
+</div>
+
+<div class="example">
+    <textarea #dontparse rows="1" disabled>
+    <div #css="background-color: borderColor" style="border-width: 2px;"></div>
+    </textarea>
+
+    <div #css="background-color: borderColor" style="border-width: 2px; border-style: solid; width:100px; height: 30px; display:inline-block"></div>
+</div>
+
+<div class="example">
+    <textarea #dontparse rows="1" disabled>
+    <div #css="color: getRandColor();fontSize: size*px" >Text</div>
+    </textarea>
+
+    <div #css="color: getRandColor();fontSize: size*px" >Text</div>
+</div>
+<div class="example">
+    <textarea #dontparse rows="1" disabled>
+    <div #css="color: getRandColor();fontSize: size*px" >Text</div>
+    </textarea>
+
+    <div #css="color: getRandColor();fontSize: size*px" >Text</div>
+</div>

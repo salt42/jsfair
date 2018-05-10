@@ -1,0 +1,42 @@
+<style>
+    d-for ul {
+        position: relative;
+        left: 20px;
+    }
+</style>
+
+<div class="example">
+    <textarea #dontparse rows="4" disabled>
+    <ul #for="user of Users">
+        <li #css="color:user.color">{{user.name}}</li>
+    </ul>
+    </textarea>
+
+    <ul #for="user of Users">
+        <li #css="color:user.color">{{user.name}}</li>
+    </ul>
+</div>
+
+<div class="example">
+    <textarea #dontparse rows="4" disabled>
+    <ul #for="user, index of Users">
+        <li #css="color:user.color">{{index}} - {{user.name}}</li>
+    </ul>
+    </textarea>
+
+    <ul #for="user, index of Users">
+        <li #css="color:user.color">{{index}} - {{user.name}}</li>
+    </ul>
+</div>
+
+<div class="example">
+    <textarea #dontparse rows="4" disabled>
+    <ul #for="user, key in Users.0">
+        <li #css="color:user.color">{{key}} : {{user}}</li>
+    </ul>
+    </textarea>
+
+    <ul #for="user, key in Users.0">
+        <li #css="color:user.color">{{key}} : {{user}}</li>
+    </ul>
+</div>

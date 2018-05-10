@@ -1,0 +1,40 @@
+<style>
+    d-on .active {background-color: greenyellow}
+</style>
+<p>Bind event handler</p>
+
+<div class="example">
+    <textarea #dontparse rows="1" disabled>
+    <span #on="click:clickHandler(event, this, clickCount)"></span>
+    </textarea>
+    <span #on="click:clickHandler(event, this, clickCount)" style="cursor: pointer">Click me</span><br>
+    <span>Click count: {{clickCount}}</span>
+</div>
+
+<div class="example">
+    <textarea #dontparse rows="5" disabled>
+    <div #on="click:p:clickHandler(event, this, clickCount)">
+        not clickable
+        <p>clickable</p>
+    </div>
+    </textarea>
+    <div #on="click:p:clickHandler(event, this, clickCount)">
+        not clickable
+        <p style="cursor: pointer">clickable</p>
+    </div>
+    <span>Click count: {{clickCount}}</span>
+</div>
+
+<div class="example">
+    <textarea #dontparse rows="5" disabled>
+    <div #on="click:p:clickHandler(event, this, clickCount)">
+        not clickable but hoverable
+        <p>clickable and hoverable</p>
+    </div>
+    </textarea>
+    <div #on="mouseenter:mouseEnterHandler(event, this);mouseleave:mouseLeaveHandler(event, this);click:p:clickHandler(event, this, clickCount)" :class="hover?'active'">
+        not clickable but hoverable
+        <p style="cursor: pointer;border: black 1px solid">clickable and hoverable</p>
+    </div>
+    <span>Click count: {{clickCount}}</span>
+</div>

@@ -1,0 +1,12 @@
+<style>
+    d-comp .comp-ok { color: green; }
+</style>
+<p>Die in #comp benutze Eigenschaft muss mit setData() gesetzt werden (der wert ist irrelevant)</p>
+<p>!! Die die Componente ist in onLoad noch nicht gesetzt, erst nach dem rendering </p>
+<div class="example">
+    <textarea #dontparse rows="1" disabled>
+    <div #comp="comp">isComp  <span :class="compOK?'comp-ok'">OK</span></div>
+    </textarea>
+    <green #comp="comp"></green>
+    <div>isComp  <span :class="compOK?'comp-ok'">OK</span></div>
+</div>

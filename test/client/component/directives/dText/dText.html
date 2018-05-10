@@ -1,0 +1,34 @@
+<style>
+    d-text {}
+</style>
+
+<div class="controls">
+    <label>
+        <span>user.name</span>
+        <input type="text" #value="user.name">
+    </label>
+</div>
+
+<div class="example">
+    <textarea #dontparse rows="1" disabled>
+    <span>{{welcomeText}}</span>
+    </textarea>
+    <span>{{welcomeText}}</span>
+    <br><br>
+</div>
+
+<div class="example">
+    <textarea #dontparse rows="1" disabled>
+    <span>{{getText('Hallo', user.name)}}</span>
+    </textarea>
+    <span>{{getText('Hallo', user.name)}}</span>
+    <br><br>
+</div>
+
+<div class="example">
+    <textarea #dontparse rows="1" disabled>
+    <span>{{user.name}}</span>
+    </textarea>
+    <span>{{user.name}}</span>
+    <br><br>
+</div>

@@ -3,16 +3,37 @@
         padding: 10px;
         background-color: darkgray;
     }
-    textarea {
-        width: 100%;
+    reference .part {
+        position: relative;
+        width: 80%;
+        border: 1px solid #000;
+        padding: 10px;
+        height: auto;
+    }
+    reference .example {
+        display: inline-block;
+        padding: 10px;
+        border: 1px solid #000000;
+        background-color: rgba(0, 12, 44, 0.08);
+        width: calc(100% - 20px);
+        height: auto;
+    }
+    reference .example>textarea {
+        float: left;
+        width: 50%;
         padding: 10px;
         background-color: darkgray;
+        margin-right: 10px;
+        overflow-y: hidden;
+    }
+    reference .controls {
+        float: right;
     }
 </style>
 <h1>Directives</h1>
-<ul #for="direct of directives">
-    <div style="border: 1px solid #000">
+<div #for="direct of directives">
+    <div class="part">
         <h3>{{direct.name}}</h3>
         <section :id="direct.comp" :default="direct.comp"></section>
     </div>
-</ul>
+</div>

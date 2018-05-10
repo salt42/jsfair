@@ -1,0 +1,81 @@
+<style>
+    d-colon .example.mass-test>div {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+    }
+    d-colon .green { background-color: green }
+    d-colon .pink { background-color: pink }
+    d-colon .yellow { background-color: yellow }
+    d-colon .blue { background-color: blue }
+</style>
+<div class="controls">
+    <label>
+        <span>isGreen:</span>
+        <input type="checkbox" #value="isGreen">
+    </label>
+    <label>
+        <span>inputType</span>
+        <select #value="inputType">
+            <option value="checkbox">checkbox</option>
+            <option value="text">text</option>
+            <option value="radio">radio</option>
+            <option value="search">search</option>
+            <option value="range">range</option>
+            <option value="button">button</option>
+            <option value="number">number</option>
+            <option value="hidden">hidden</option>
+            <option value="email">email</option>
+            <option value="color">color</option>
+            <option value="submit">submit</option>
+            <option value="date">date</option>
+            <option value="datetime-local">datetime-local</option>
+            <option value="file">file</option>
+            <option value="image">image</option>
+            <option value="month">month</option>
+            <option value="password">password</option>
+            <option value="reset">reset</option>
+            <option value="tel">tel</option>
+            <option value="time">time</option>
+            <option value="url">url</option>
+            <option value="week">week</option>
+        </select>
+    </label>
+</div>
+
+<div class="example">
+    <textarea #dontparse rows="1" disabled>
+    <input :type="inputType">
+    </textarea>
+    <input :type="inputType">
+</div>
+<div class="example">
+    <textarea #dontparse rows="1" disabled>
+    <input :value="greenClass" style="width: 50px" disabled>
+    </textarea>
+    <input :value="greenClass" style="width: 50px" disabled>
+    <br>
+</div>
+<div class="example mass-test">
+    <textarea #dontparse rows="10" disabled>
+    <div :class="greenClass"></div>
+    <div :class="getGreenClass()"></div>
+    <div :class="isGreen?greenClass"></div>
+    <div :class="isGreen?greenClass:pinkClass"></div>
+    <div :class="isGreen?'green'"></div>
+    <div :class="isGreen?'green':pinkClass"></div>
+    <div :class="isGreen==isGreen?'green':pinkClass"></div>
+    <div :class="yellowClass==getGreenClass()?pinkClass:'green'"></div>
+    <div :class="getGreenClass()=='green'?'green':pinkClass"></div>
+    </textarea>
+
+    <div :class="greenClass"></div>
+    <div :class="getGreenClass()"></div>
+    <div :class="isGreen?greenClass"></div>
+    <div :class="isGreen?greenClass:pinkClass"></div>
+    <div :class="isGreen?'green'"></div>
+    <div :class="isGreen?'green':pinkClass"></div>
+    <div :class="isGreen==isGreen?'green':pinkClass"></div>
+    <div :class="yellowClass==getGreenClass()?pinkClass:'green'"></div>
+    <div :class="getGreenClass()=='green'?'green':pinkClass"></div>
+</div>

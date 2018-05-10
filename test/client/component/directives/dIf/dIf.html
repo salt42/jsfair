@@ -1,0 +1,47 @@
+<style>
+    d-css {}
+    d-css textarea { width: 50%!important; }
+    .equal { color: limegreen }
+    .unequal { color: red }
+</style>
+
+<div class="controls">
+    <label>
+        <input type="button" #value="bool" #on="click:invert()">
+    </label>
+    <label>Count
+        <input type="range" #value="values.count" min="0" max="20">
+        {{values.count}}
+    </label>
+</div>
+
+<div class="example">
+    <textarea #dontparse rows="6" disabled>
+    <div #if="bool">
+        <h1>Hidden Secret</h1>
+    </div>
+    <div #if="!bool">
+        <h1>Inverted</h1>
+    </div>
+    </textarea>
+    <div #if="bool">
+        <h1>Hidden Secret</h1>
+    </div>
+    <div #if="!bool">
+        <h1>Inverted</h1>
+    </div>
+</div>
+<div class="example">
+    <textarea #dontparse rows="5" disabled>
+    <p>{{values.count}}
+        <span #if="values.count==10"> ==</span>
+        <span #if="!values.count=='10'">!=</span>
+        10
+    </p>
+    </textarea>
+    <p>{{values.count}}
+        <span #if="values.count==10" class="equal"> ==</span>
+        <span #if="!values.count=='10'" class="unequal">!=</span>
+        10
+    </p>
+</div>

@@ -1,2 +1,94 @@
-<input #value="inputData" style="background-color: green">
-<my-input val="inputData"> </my-input>
+<style>
+    code {
+        padding: 10px;
+        background-color: darkgray;
+    }
+    bind .part {
+        position: relative;
+        width: calc(100% - 24px);
+        border: 1px solid #000;
+        padding: 10px;
+        height: auto;
+    }
+    bind .example {
+        display: inline-block;
+        padding: 10px;
+        border: 1px solid #000000;
+        background-color: rgba(0, 12, 44, 0.08);
+        width: calc(100% - 20px);
+        height: auto;
+    }
+    bind .text>span {
+        position: absolute;
+        top: 0px;
+        left: 7px;
+        font-size: 12px;
+        font-weight: bold;
+        color: darkolivegreen;
+    }
+    bind .text {
+        position: relative;
+        float: left;
+        width: 33%;
+        margin-right: 20px;
+        padding-top: 13px;
+    }
+    bind .text>textarea {
+        width: 100%;
+        margin: 0;
+        padding: 10px 0 10px 10px;
+        overflow-y: hidden;
+        resize: vertical;
+        background-color: darkgray;
+        border-left: darkolivegreen 4px solid;
+    }
+    bind .text.js>textarea {
+        background-color: darkgray;
+        border-left: #af831b 4px solid;
+    }
+    bind .text.js>span {
+        color: #af831b;
+    }
+</style>
+<div class="part">
+    <p>Beim parsen von Component.setData({}) werden alle strings die mit '@' und '@@' beginnen als Attribute binding betrachtet. wobei '@' binding von parent zum child bedeutet und '@@' bidirectional. </p>
+    <p></p>
+    <div class="example">
+        <div class="text html">
+            <span>HTML</span>
+            <textarea #dontparse rows="10" disabled>
+    {{text}}
+    <my-input val="text"></my-input>
+            </textarea>
+        </div>
+        <div class="text js">
+            <span>JavaScript -> 'my-input' Componente</span>
+            <textarea #dontparse rows="10" disabled>
+defineComp({
+    name: "my-input",
+    template: `
+        <input type="text" #value="value">`
+}, function (global, template) {
+    this.setData({
+        value: "@@val"
+    })
+});
+            </textarea>
+        </div>
+        {{text}}
+        <my-input val="text"></my-input>
+    </div>
+
+
+    <div class="example">
+        <div class="text html">
+            <span>HTML</span>
+            <textarea #dontparse rows="2" disabled>
+                <input #value="inputData">
+                <my-input val="inputData"></my-input>
+            </textarea>
+        </div>
+        <input #value="inputData">
+        <my-input val="inputData"></my-input>
+    </div>
+</div>

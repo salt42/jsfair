@@ -3,7 +3,8 @@ defineComp({
 }, function (global) {
     /** @this Component */
     this.model({
-        inputData: "sers"
+        text: "change me!",
+        inputData: "ich bin zwei"
     });
     this.onLoad = () => {};
 });

@@ -1,0 +1,13 @@
+<style>
+    d-node {}
+    d-node .html-node-ok { color: red; }
+</style>
+
+<p>Die in #node benutze Eigenschaft muss mit setData() gesetzt werden (der wert ist irrelevant)</p>
+<div class="example">
+    <textarea #dontparse rows="1" disabled>
+    <div #node="htmlNode">htmlNode  <span class="html-node-ok">OK</span></div>
+    </textarea>
+
+    <div #node="htmlNode">htmlNode  <span class="html-node-ok">OK</span></div>
+</div>
