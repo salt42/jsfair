@@ -172,11 +172,28 @@
                 }
             }
         },
+        "#node": {
+            name: "#node",
+            init: function(node, attr, scope) {
+                scope.resolve(attr, node);
+            }
+        },
+        "#comp": {
+            name: "#comp",
+            init: function(node, attr, scope) {
+                setTimeout(() => {
+                    if (!node.hasOwnProperty('jsFairComponent')) throw new Error('HTML node is not a Component! '); //@notLive
+                    scope.resolve(attr, node.jsFairComponent);
+                }, 1);
+            }
+        }
     };
     let directiveNames = [
         "::",
         "#text",
-        "#css"
+        "#css",
+        "#node",
+        "#comp"
     ];
     /**
      * Define a jsFair module
@@ -376,6 +393,20 @@
                             return (...args) => {
                                 self.onDataUpdate.subscribe(...args);
                             };
+                        //@developBegin
+                        //needed for jsfair dev tools plugin
+                        case "toJSON":
+                            return () => {
+                                let res = {};
+                                Object
+                                    .entries(target)
+                                    .filter(pair => !(pair[1] instanceof HTMLElement || pair[1] instanceof Scope || pair[1] instanceof Component) )
+                                    .map((a) => {
+                                        res[a[0]] = a[1];
+                                    });
+                                return res;
+                            };
+                        //@developEnd
                         default:
                             if (!target.hasOwnProperty(name)) return undefined;
                             return target[name];
@@ -449,7 +480,7 @@
                                 //bind attribute bidirectional
                                 let attributeName = data[prop].slice(2);
                                 let parentProp = this.ref.getAttribute(attributeName);
-                                if (parentProp === null) throw new Error("Attribute '"+ attributeName +"' not found on " + this.context); //@notLive
+                                if (parentProp === null) throw new Error("Attribute '"+ attributeName +"' not found on " + this.context);//@notLive
                                 let scope = this.resolve2scope(parentProp);
                                 if (!scope) {
                                     this.bindAttribute(data[prop].slice(2), prop);
@@ -518,7 +549,8 @@
             updateData(attrName, propName);
 
             function updateData(attr, prop) {
-                self.data[prop] = self.ref.getAttribute(attr);
+                let c = self.ref.getAttribute(attr);
+                self.data[prop] = (c === '')? true: c || false;
             }
         }
         resolveOnComps(property) {
@@ -644,7 +676,7 @@
                 type: this.type,
                 subType: this.subType,
                 children: this.children,
-                data: this._data
+                data: this.data
             };
         }
     }
@@ -679,8 +711,7 @@
                         continue;
                     }
                     if (tagName) {
-                        tagName = tagName.toLowerCase();
-                        if (Components.hasOwnProperty(tagName)) {
+                        if (Components.hasOwnProperty(tagName.toLowerCase())) {
                             initComp(node, scope, []);
                             node = node.nextSibling;
                             continue;
@@ -745,7 +776,7 @@
         $(node).data("context", ctx);//@todo deprecated
         node.jsFairComponent = ctx;
         node.getComponent = () => {
-            //@todo mark as deprecated?
+            //@todo mark as deprecated????
             return ctx;
         };
 
@@ -984,23 +1015,26 @@ defineDirective({ name: "#value" }, function (node, attr, scope) {
     let type = node.getAttribute('type');
     let targetAttr = (type === 'checkbox')? 'checked': 'value';
     let event = (type === 'checkbox')? 'change': 'input';//@todo check radio buttons
+    node.addEventListener(event, function (e) {
+        let value;
+        switch(type) {
+            case 'checkbox': value = e.target.checked; break;
+            case 'file': value = e.target.files; break;
+            default: value = e.target.value;
+        }
+        scope.resolve(attr, value);
+        scope.onDataUpdate.next(attr.split('.')[0]);
+    });
+    if (type === 'file') return;
     update();
     scope.onUpdate(attr, update);
     function update() {
-        if(targetAttr === 'checked') {
+        if (targetAttr === 'checked') {
             node.checked = scope.resolve(attr);
         } else {
             node.value = scope.resolve(attr);
         }
     }
-    node.addEventListener(event, function (e) {
-        if (targetAttr === 'checked') {
-            scope.resolve(attr, e.target.checked);
-        } else {
-            scope.resolve(attr, e.target.value);
-        }
-        scope.onDataUpdate.next(attr.split('.')[0]);
-    });
 });
 defineDirective({ name: "#data" }, function (node, attr, scope) {
     let a = attr.split(":");
