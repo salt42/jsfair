@@ -29,6 +29,9 @@ define("AppState", function(global) {
      * @property {object} AppState
      */
     /**
+     * @this {AppState}
+     */
+    /**
      * @memberOf Global.AppState
      */
     document.querySelectorAll('a[url]').forEach((node, index) => {
@@ -36,6 +39,9 @@ define("AppState", function(global) {
             global.AppState.goToUrl(node.getAttribute('url'));
         });
     });
+    /**
+     * @memberOf Global.AppState
+     */
     this.onAppStateChanged = new Rx.ReplaySubject();
     let debug = false;//@notLive
     let benchmark = false;//@notLive
@@ -85,7 +91,6 @@ define("AppState", function(global) {
         for (let i = 0; i < states.length; i++) {
             let state = states[i];
             let keys = [];
-
             let re = pathToRegexp(state.url, keys, {
                 end: false,
                 // strict: true
@@ -96,6 +101,7 @@ define("AppState", function(global) {
             if(r) {
                 if (debug) console.log("matched: ", url, state);//@notLive
                 let args = {};
+                if (debug) console.log("arguments: ", keys);//@notLive
                 for (let k = 0; k < keys.length; k++) {
                     args[keys[k].name] = r[k + 1];
                 }
@@ -123,7 +129,7 @@ define("AppState", function(global) {
                             });
                     }
                     Promise.all(wait).then(function () {
-                        self.onAppStateChanged.next(stateEvent);
+                        // self.onAppStateChanged.next(stateEvent);
                         if(state.sub) {
                             if (debug) console.log("match subs");//@notLive
                             url = url.replace(r[0], "");
@@ -136,10 +142,11 @@ define("AppState", function(global) {
                     }.bind(this));
                     return;
                 } else {
-                    self.onAppStateChanged.next(stateEvent);
+                    // self.onAppStateChanged.next(stateEvent);
                     if(state.sub) {
                         if (debug) console.log("match subs");//@notLive
                         url = url.replace(r[0], "");
+                        console.log('deeper', state.url);
                         match(url, state.sub, fn, _result);
                     } else {
                         if (debug) console.log("matching completed");//@notLive
@@ -168,33 +175,34 @@ define("AppState", function(global) {
     this.goToUrl = function (url) {
         if(debug) console.log("GoToUrl", url);//@notLive
         if(benchmark) console.time("AppState Time");//@notLive
-        match(url, appStates, (state) => {
-            if(debug) console.log(state);//@notLive
+        match(url, appStates, (states) => {
+            if(debug) console.log(states);//@notLive
+            self.onAppStateChanged.next(states[states.length-1]);
             push({
-                name: state[state.length-1],
+                name: states[states.length-1],
                 url: url,
-                matches: state
+                matches: states
             });
             if(benchmark) console.timeEnd("AppState Time");//@notLive
         });
     };
     /**
      * @todo marked deprecated untill implementation
-     * @deprecated
      * @summary call state directly
      * @memberOf Global.AppState
      * @param {string} url
      */
     this.goToState = function (state) {
-        if(debug) console.log("GoToState", state);//@notLive
-        if(benchmark) console.time("AppState Time");//@notLive
-        if(debug) console.log(state);//@notLive
-        push({
-            name: state[state.length-1],
-            url: null,
-            matches: state
-        });
-        if(benchmark) console.timeEnd("AppState Time");//@notLive
+        console.error('Not implemented yet');
+        // if(debug) console.log("GoToState", state);//@notLive
+        // if(benchmark) console.time("AppState Time");//@notLive
+        // if(debug) console.log(state);//@notLive
+        // push({
+        //     name: state[state.length-1],
+        //     url: null,
+        //     matches: state
+        // });
+        // if(benchmark) console.timeEnd("AppState Time");//@notLive
     };
 
     global.onPageLoaded.subscribe(function() {
@@ -213,8 +221,13 @@ define("AppState", function(global) {
     window.onpopstate = function(event) {
         match(event.state.url, appStates, (state) => { });
     }.bind(this);
-
-
+    jsFair.Component.prototype.onState = function(filter, fn) {
+        if (typeof filter === 'function') fn = filter;
+        if (typeof filter === 'string') filter = [filter];
+        self.onAppStateChanged
+            .filter(v => (filter.indexOf(v.name) > -1))
+            .subscribe(fn);
+    }
 
 
 

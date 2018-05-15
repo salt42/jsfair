@@ -334,11 +334,11 @@
 
     class BaseComponent {
         constructor(name) {
-            /** typeof {String} */
+            /** typeof {String}*/
             this.name = name;
-            /** typeof {Scope} */
+            /** @typeof {Scope} scope*/
             this.scope;
-            /** typeof {Object} */
+            /** @typeof {Object} */
             this.data;
         }
 
@@ -364,11 +364,21 @@
         setData(data) {
             this.scope.setData(data);
         }
-        updateValue(path, value) {
+        setValue(path, value) {
             let name = path.split('.')[0];
             if (!this.data.has(name)) throw new Error("propetie '" + name + "' not found"); //@notLive
             this.scope.resolve(path, value);
             this.scope.onDataUpdate.next(path.split('.')[0]);
+        }
+        updateValue(path, value) {
+            console.warn('deprecated -> use setValue instead')
+            let name = path.split('.')[0];
+            if (!this.data.has(name)) throw new Error("propetie '" + name + "' not found"); //@notLive
+            this.scope.resolve(path, value);
+            this.scope.onDataUpdate.next(path.split('.')[0]);
+        }
+        onValue(path, fn) {
+            this.scope.onUpdate(path, (key) => fn(this.data[key], key) );
         }
     }
     class Scope {
@@ -413,6 +423,7 @@
                     }
                 },
                 set(target, property, value, receiver) {
+                    if (target[property] === value) return true;
                     target[property] = value;
                     self.onDataUpdate.next(property);
                     return true;
@@ -466,7 +477,6 @@
                 switch (typeof data[prop]) {
                     case 'object':
                         if (data[prop] instanceof Rx.Observable) {
-                            //link pipe
                             this._data[prop] = null;
                             observerHandler(data, prop);
                             continue;
@@ -502,18 +512,31 @@
                                     scope.onDataUpdate.next(parentProp.split('.')[0]);
                                 });
                             } else {
-                                //bind attribute
                                 this.bindAttribute(data[prop].slice(1), prop);
                             }
                         } else {
                             this._data[prop] = data[prop];
                         }
                         break;
+                    case 'function':
+
+                        // BIND(global.PostService, 'searchQuery');
+                        //
+                        // // let args = /\(([\w,\s]*)\)/.exec(data[prop].toString())[1].split(',').map(e => e.trim());
+                        // //@todo or not todo is here the question
+                        // //call func
+                        // let r = data[prop]();
+                        // Object.assign(r.obj, {
+                        //     set query
+                        // });
+                        //result object and prop
+                        //set setter and getter to object
+
                     default:
                         this._data[prop] = data[prop];
                 }
                 // this._data[prop] = data[prop];
-                this.onDataUpdate.next(prop);//move after for
+                this.onDataUpdate.next(prop);//@todo move after for???
             }
             function observerHandler(data, prop) {
                 self._subscriptions.push(
